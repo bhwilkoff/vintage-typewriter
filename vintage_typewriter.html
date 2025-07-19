@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typewriter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #fefefe;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: auto;
+        }
+
+        .paper-area {
+            flex: 1;
+            width: 100vw;
+            height: 35vh;
+            background: #fefefe;
+            position: relative;
+            padding: 20px 80px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+
+        .text-content {
+            line-height: 1.8;
+            font-size: 16px;
+            color: #333;
+            height: 100%;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .text-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .text-content {
+            scrollbar-width: none;
+        }
+
+        .typing-area {
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-bottom: 20px;
+        }
+
+        .scroll-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        .file-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        .scroll-btn, .file-btn {
+            background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 14px;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .scroll-btn:hover, .file-btn:hover {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+
+        .scroll-btn:active, .file-btn:active {
+            background: linear-gradient(145deg, #d0d0d0, #c0c0c0);
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .type-bars-container {
+            position: relative;
+            height: 80px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+            perspective: 1500px;
+            background: linear-gradient(180deg, transparent, rgba(0,0,0,0.05));
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 20px;
+        }
+
+        .type-bar {
+            position: relative;
+            width: 4px;
+            height: 60px;
+            background: linear-gradient(180deg, #777, #555, #333);
+            border-radius: 2px;
+            transform-origin: bottom center;
+            transition: transform 0.3s ease-out;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            flex-shrink: 0;
+        }
+
+        .type-bar::before {
+            content: attr(data-char);
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(145deg, #444, #666);
+            color: white;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            white-space: nowrap;
+            line-height: 1;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        .type-bar.active {
+            transform: translateY(-40px) rotateX(-15deg) scale(1.1);
+            background: linear-gradient(180deg, #999, #777, #555);
+        }
+
+        .type-bar.active::before {
+            background: linear-gradient(145deg, #666, #888);
+            transform: translateX(-50%) scale(1.2);
+        }
+
+        .keyboard-container {
+            background: linear-gradient(145deg, #f8f8f8, #e8e8e8);
+            padding: 20px;
+            border-top: 3px solid #ddd;
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .color-picker {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .color-btn {
+            background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .color-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .color-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .color-btn.active {
+            border-color: #333;
+            border-width: 2px;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+        }
+
+        .color-btn.active::after {
+            content: '✓';
+            position: absolute;
+            color: #333;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+
+        .keyboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 8px;
+        }
+
+        .key-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .key {
+            background: linear-gradient(145deg, #FFFEF7, #FFF8DC);
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .key:hover {
+            background: linear-gradient(145deg, #FFFFFF, #FFFEF7);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .key:active, .key.pressed {
+            background: linear-gradient(145deg, #F5F5F5, #F0F0F0);
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .key-wide {
+            width: 80px;
+            border-radius: 25px;
+        }
+
+        .key-extra-wide {
+            width: 120px;
+            border-radius: 25px;
+        }
+
+        .space-bar {
+            width: 300px;
+            border-radius: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .paper-area {
+                padding: 15px 50px;
+                height: 30vh;
+            }
+            
+            .text-content {
+                font-size: 14px;
+            }
+            
+            .scroll-controls {
+                top: 15px;
+                right: 15px;
+            }
+            
+            .file-controls {
+                top: 15px;
+                left: 15px;
+            }
+            
+            .scroll-btn, .file-btn {
+                width: 25px;
+                height: 25px;
+                font-size: 12px;
+            }
+            
+            .type-bars-container {
+                height: 60px;
+                padding: 0 15px;
+            }
+            
+            .type-bar {
+                width: 3px;
+                height: 45px;
+            }
+            
+            .type-bar::before {
+                font-size: 8px;
+                top: -20px;
+                padding: 3px 4px;
+            }
+            
+            .type-bar.active {
+                transform: translateY(-30px) rotateX(-12deg) scale(1.1);
+            }
+            
+            .key {
+                padding: 8px;
+                width: 40px;
+                height: 40px;
+                font-size: 12px;
+            }
+            
+            .key-wide {
+                width: 60px;
+                border-radius: 20px;
+            }
+            
+            .key-extra-wide {
+                width: 80px;
+                border-radius: 20px;
+            }
+            
+            .space-bar {
+                width: 200px;
+                border-radius: 20px;
+            }
+            
+            .keyboard {
+                gap: 6px;
+                padding-left: 0;
+            }
+            
+            .key-row {
+                gap: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="paper-area">
+        <div class="text-content" id="paper-text">
+            <div class="typing-area" id="typing-area"></div>
+        </div>
+        <div class="scroll-controls">
+            <button class="scroll-btn" id="scroll-up" title="Scroll Up">▲</button>
+            <button class="scroll-btn" id="scroll-down" title="Scroll Down">▼</button>
+        </div>
+        <div class="file-controls">
+            <button class="file-btn" id="save-btn" title="Save Document">S</button>
+            <button class="file-btn" id="new-btn" title="New Document">N</button>
+        </div>
+    </div>
+    
+    <div class="type-bars-container" id="type-bars"></div>
+    
+    <div class="keyboard-container" id="keyboard-container">
+        <div class="color-picker">
+            <div class="color-btn" data-color="#C2B280" style="background: #C2B280;" title="Desert Sand"></div>
+            <div class="color-btn" data-color="#22374E" style="background: #22374E;" title="Alpine Blue"></div>
+            <div class="color-btn active" data-color="#848482" style="background: #848482;" title="Sapphire Gray"></div>
+            <div class="color-btn" data-color="#317C7A" style="background: #317C7A;" title="Seafoam Green"></div>
+            <div class="color-btn" data-color="#F08080" style="background: #F08080;" title="Coral Pink"></div>
+        </div>
+        <div class="keyboard">
+            <div class="key-row">
+                <div class="key" data-key="1">!<br>1</div>
+                <div class="key" data-key="2">@<br>2</div>
+                <div class="key" data-key="3">#<br>3</div>
+                <div class="key" data-key="4">$<br>4</div>
+                <div class="key" data-key="5">%<br>5</div>
+                <div class="key" data-key="6">^<br>6</div>
+                <div class="key" data-key="7">&<br>7</div>
+                <div class="key" data-key="8">*<br>8</div>
+                <div class="key" data-key="9">(<br>9</div>
+                <div class="key" data-key="0">)<br>0</div>
+                <div class="key" data-key="-">_<br>-</div>
+                <div class="key" data-key="=">=<br>=</div>
+                <div class="key key-wide" data-key="Backspace">⌫</div>
+            </div>
+            
+            <div class="key-row">
+                <div class="key" data-key="q">Q</div>
+                <div class="key" data-key="w">W</div>
+                <div class="key" data-key="e">E</div>
+                <div class="key" data-key="r">R</div>
+                <div class="key" data-key="t">T</div>
+                <div class="key" data-key="y">Y</div>
+                <div class="key" data-key="u">U</div>
+                <div class="key" data-key="i">I</div>
+                <div class="key" data-key="o">O</div>
+                <div class="key" data-key="p">P</div>
+                <div class="key" data-key="[">{<br>[</div>
+                <div class="key" data-key="]">}<br>]</div>
+                <div class="key" data-key="\">|<br>\</div>
+            </div>
+            
+            <div class="key-row">
+                <div class="key" data-key="a">A</div>
+                <div class="key" data-key="s">S</div>
+                <div class="key" data-key="d">D</div>
+                <div class="key" data-key="f">F</div>
+                <div class="key" data-key="g">G</div>
+                <div class="key" data-key="h">H</div>
+                <div class="key" data-key="j">J</div>
+                <div class="key" data-key="k">K</div>
+                <div class="key" data-key="l">L</div>
+                <div class="key" data-key=";">:<br>;</div>
+                <div class="key" data-key="'">"<br>'</div>
+                <div class="key key-extra-wide" data-key="Enter">Return</div>
+            </div>
+            
+            <div class="key-row">
+                <div class="key key-wide" data-key="Shift">Shift</div>
+                <div class="key" data-key="z">Z</div>
+                <div class="key" data-key="x">X</div>
+                <div class="key" data-key="c">C</div>
+                <div class="key" data-key="v">V</div>
+                <div class="key" data-key="b">B</div>
+                <div class="key" data-key="n">N</div>
+                <div class="key" data-key="m">M</div>
+                <div class="key" data-key=",">&lt;<br>,</div>
+                <div class="key" data-key=".">&gt;<br>.</div>
+                <div class="key" data-key="/">?<br>/</div>
+                <div class="key key-wide" data-key="Shift">Shift</div>
+            </div>
+            
+            <div class="key-row">
+                <div class="key space-bar" data-key=" ">Space</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+var paperText = '';
+var isShiftPressed = false;
+var autoScrollToBottom = true;
+
+var paperTextElement = document.getElementById('paper-text');
+var typingArea = document.getElementById('typing-area');
+var typeBarsContainer = document.getElementById('type-bars');
+var scrollUpBtn = document.getElementById('scroll-up');
+var scrollDownBtn = document.getElementById('scroll-down');
+var keyboardContainer = document.getElementById('keyboard-container');
+var saveBtn = document.getElementById('save-btn');
+var newBtn = document.getElementById('new-btn');
+
+var chars = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '=', '[', ']', '\\', ';', "'", ',', '.', '/'];
+
+for (var i = 0; i < chars.length; i++) {
+    var typeBar = document.createElement('div');
+    typeBar.className = 'type-bar';
+    typeBar.setAttribute('data-char', chars[i]);
+    typeBarsContainer.appendChild(typeBar);
+}
+
+function animateTypeBar(char) {
+    var typeBars = document.querySelectorAll('.type-bar');
+    for (var i = 0; i < typeBars.length; i++) {
+        var bar = typeBars[i];
+        var barChar = bar.getAttribute('data-char');
+        if (barChar === char.toUpperCase() || barChar === char.toLowerCase() || barChar === char) {
+            var originalChar = barChar;
+            bar.setAttribute('data-char', char);
+            bar.classList.add('active');
+            setTimeout(function(b, orig) {
+                return function() {
+                    b.classList.remove('active');
+                    b.setAttribute('data-char', orig);
+                };
+            }(bar, originalChar), 400);
+            break;
+        }
+    }
+}
+
+function updatePaperText() {
+    typingArea.innerHTML = paperText.replace(/\n/g, '<br>');
+    
+    // Auto-scroll to bottom when typing
+    if (autoScrollToBottom) {
+        paperTextElement.scrollTop = paperTextElement.scrollHeight;
+    }
+}
+
+function scrollUp() {
+    autoScrollToBottom = false;
+    paperTextElement.scrollTop -= 60;
+}
+
+function scrollDown() {
+    var isNearBottom = paperTextElement.scrollTop >= paperTextElement.scrollHeight - paperTextElement.clientHeight - 60;
+    paperTextElement.scrollTop += 60;
+    
+    // Re-enable auto-scroll if we're near the bottom
+    if (isNearBottom) {
+        autoScrollToBottom = true;
+    }
+}
+
+function scrollToBottom() {
+    autoScrollToBottom = true;
+    paperTextElement.scrollTop = paperTextElement.scrollHeight;
+}
+
+function typeCharacter(char) {
+    if (char === 'Backspace') {
+        if (paperText.length > 0) {
+            paperText = paperText.slice(0, -1);
+        }
+    } else if (char === 'Enter') {
+        paperText += '\n';
+        animateTypeBar('Return');
+    } else if (char === ' ') {
+        paperText += ' ';
+        animateTypeBar('Space');
+    } else if (char.length === 1) {
+        var finalChar = char;
+        
+        if (char.match(/[a-zA-Z]/)) {
+            finalChar = isShiftPressed ? char.toUpperCase() : char.toLowerCase();
+        } else if (isShiftPressed) {
+            var shiftChars = {
+                '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
+                '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+                '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|',
+                ';': ':', "'": '"', ',': '<', '.': '>', '/': '?'
+            };
+            finalChar = shiftChars[char] || char;
+        }
+        
+        paperText += finalChar;
+        animateTypeBar(finalChar);
+    }
+    
+    // Re-enable auto-scroll when typing
+    autoScrollToBottom = true;
+    updatePaperText();
+}
+
+// Scroll button event listeners
+scrollUpBtn.addEventListener('click', scrollUp);
+scrollDownBtn.addEventListener('click', scrollDown);
+
+// File control functions
+function saveDocument() {
+    var textToSave = paperText || 'The quick brown fox jumps over the lazy dog.\n\n';
+    var blob = new Blob([textToSave], { type: 'text/plain' });
+    var url = window.URL.createObjectURL(blob);
+    
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'typewriter-document.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+}
+
+function newDocument() {
+    if (paperText.trim() && paperText.trim() !== 'The quick brown fox jumps over the lazy dog.') {
+        if (confirm('Are you sure you want to start a new document? Any unsaved work will be lost.')) {
+            paperText = '';
+            autoScrollToBottom = false;
+            updatePaperText();
+            paperTextElement.scrollTop = 0;
+        }
+    } else {
+        paperText = '';
+        autoScrollToBottom = false;
+        updatePaperText();
+        paperTextElement.scrollTop = 0;
+    }
+}
+
+// File button event listeners
+saveBtn.addEventListener('click', saveDocument);
+newBtn.addEventListener('click', newDocument);
+
+// Mouse wheel scrolling
+paperTextElement.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    autoScrollToBottom = false;
+    
+    if (e.deltaY < 0) {
+        scrollUp();
+    } else {
+        scrollDown();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Shift') {
+        isShiftPressed = true;
+        var shiftKeys = document.querySelectorAll('[data-key="Shift"]');
+        for (var i = 0; i < shiftKeys.length; i++) {
+            shiftKeys[i].classList.add('pressed');
+        }
+        return;
+    }
+    
+    // Handle scrolling with Page Up/Down
+    if (e.key === 'PageUp') {
+        e.preventDefault();
+        scrollUp();
+        return;
+    }
+    
+    if (e.key === 'PageDown') {
+        e.preventDefault();
+        scrollDown();
+        return;
+    }
+    
+    // Handle scrolling with Arrow Up/Down when Ctrl is pressed
+    if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        if (e.key === 'ArrowUp') {
+            scrollUp();
+        } else {
+            scrollDown();
+        }
+        return;
+    }
+    
+    // Handle End key to scroll to bottom
+    if (e.key === 'End') {
+        e.preventDefault();
+        scrollToBottom();
+        return;
+    }
+    
+    if (e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+    }
+    
+    e.preventDefault();
+    
+    var key = document.querySelector('[data-key="' + e.key + '"]');
+    if (!key) {
+        key = document.querySelector('[data-key="' + e.key.toLowerCase() + '"]');
+    }
+    if (key) {
+        key.classList.add('pressed');
+    }
+    
+    typeCharacter(e.key);
+});
+
+document.addEventListener('keyup', function(e) {
+    if (e.key === 'Shift') {
+        isShiftPressed = false;
+        var shiftKeys = document.querySelectorAll('[data-key="Shift"]');
+        for (var i = 0; i < shiftKeys.length; i++) {
+            shiftKeys[i].classList.remove('pressed');
+        }
+        return;
+    }
+    
+    var key = document.querySelector('[data-key="' + e.key + '"]');
+    if (!key) {
+        key = document.querySelector('[data-key="' + e.key.toLowerCase() + '"]');
+    }
+    if (key) {
+        key.classList.remove('pressed');
+    }
+});
+
+var keys = document.querySelectorAll('.key');
+for (var i = 0; i < keys.length; i++) {
+    keys[i].addEventListener('click', function() {
+        var keyValue = this.getAttribute('data-key');
+        
+        if (keyValue === 'Shift') {
+            isShiftPressed = !isShiftPressed;
+            if (isShiftPressed) {
+                this.classList.add('pressed');
+            } else {
+                this.classList.remove('pressed');
+            }
+        } else {
+            this.classList.add('pressed');
+            var self = this;
+            setTimeout(function() {
+                self.classList.remove('pressed');
+            }, 150);
+            typeCharacter(keyValue);
+        }
+    });
+}
+
+// Color picker functionality
+function changeKeyboardColor(color) {
+    var darkerColor = darkenColor(color, 0.2);
+    var lighterColor = lightenColor(color, 0.15);
+    var midColor = darkenColor(color, 0.1);
+    
+    // Create fine-grained metal texture with many small variations
+    keyboardContainer.style.background = 
+        // Base color gradient
+        'linear-gradient(135deg, ' + lighterColor + ' 0%, ' + color + ' 40%, ' + darkerColor + ' 70%, ' + midColor + ' 100%), ' +
+        // Fine diagonal lines for brushed metal effect
+        'repeating-linear-gradient(45deg, transparent, transparent 1px, rgba(255,255,255,0.1) 1px, rgba(255,255,255,0.1) 2px, transparent 2px, transparent 4px), ' +
+        'repeating-linear-gradient(-45deg, transparent, transparent 1px, rgba(0,0,0,0.05) 1px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 4px), ' +
+        // Tiny noise pattern
+        'radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 1px, transparent 1px), ' +
+        'radial-gradient(circle at 70% 80%, rgba(0,0,0,0.08) 1px, transparent 1px), ' +
+        'radial-gradient(circle at 45% 60%, rgba(255,255,255,0.1) 1px, transparent 1px), ' +
+        'radial-gradient(circle at 85% 25%, rgba(0,0,0,0.06) 1px, transparent 1px)';
+    
+    keyboardContainer.style.backgroundSize = 
+        '100% 100%, ' +          // Base gradient
+        '8px 8px, 8px 8px, ' +   // Fine diagonal lines
+        '12px 12px, 16px 16px, 14px 14px, 18px 18px'; // Tiny noise dots
+}
+
+function darkenColor(color, amount) {
+    var usePound = false;
+    if (color[0] === '#') {
+        color = color.slice(1);
+        usePound = true;
+    }
+    
+    var num = parseInt(color, 16);
+    var amt = Math.round(2.55 * amount * 100);
+    var R = (num >> 16) - amt;
+    var G = (num >> 8 & 0x00FF) - amt;
+    var B = (num & 0x0000FF) - amt;
+    
+    return (usePound ? '#' : '') + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+        (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+        (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+}
+
+function lightenColor(color, amount) {
+    var usePound = false;
+    if (color[0] === '#') {
+        color = color.slice(1);
+        usePound = true;
+    }
+    
+    var num = parseInt(color, 16);
+    var amt = Math.round(2.55 * amount * 100);
+    var R = (num >> 16) + amt;
+    var G = (num >> 8 & 0x00FF) + amt;
+    var B = (num & 0x0000FF) + amt;
+    
+    return (usePound ? '#' : '') + (0x1000000 + (R > 255 ? 255 : R < 0 ? 0 : R) * 0x10000 +
+        (G > 255 ? 255 : G < 0 ? 0 : G) * 0x100 +
+        (B > 255 ? 255 : B < 0 ? 0 : B)).toString(16).slice(1);
+}
+
+var colorBtns = document.querySelectorAll('.color-btn');
+for (var i = 0; i < colorBtns.length; i++) {
+    colorBtns[i].addEventListener('click', function() {
+        // Remove active class from all color buttons
+        for (var j = 0; j < colorBtns.length; j++) {
+            colorBtns[j].classList.remove('active');
+        }
+        
+        // Add active class to clicked button
+        this.classList.add('active');
+        
+        // Change keyboard color
+        var selectedColor = this.getAttribute('data-color');
+        changeKeyboardColor(selectedColor);
+    });
+}
+
+updatePaperText();
+
+// Initialize with Sapphire Gray as default
+changeKeyboardColor('#848482');
+
+setTimeout(function() {
+    paperText = "The quick brown fox jumps over the lazy dog.\n\n";
+    autoScrollToBottom = false; // Don't auto-scroll on initial load
+    updatePaperText();
+    paperTextElement.scrollTop = 0; // Ensure we start at the top
+}, 1000);
+    </script>
+</body>
+</html>
