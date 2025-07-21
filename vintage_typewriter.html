@@ -521,7 +521,6 @@
     <script>
         var paperText = '';
         var isShiftPressed = false;
-        var autoScrollToBottom = false;
         var soundEnabled = true;
         var carriageReturnMode = true;
         var audioContext;
@@ -555,7 +554,7 @@
             
             var charsPerLine = Math.floor(availableWidth / charWidth);
             
-            maxLineLength = Math.max(40, Math.min(charsPerLine, 120));
+            maxLineLength = Math.max(40, Math.min(charsPerLine - 5, 120));
             
             updateMarginIndicator();
         }
@@ -779,18 +778,11 @@
         function updatePaperText() {
             var htmlContent = paperText.replace(/\n/g, '<br>');
             typingArea.innerHTML = htmlContent;
-            
-            var paperHeight = paperTextElement.clientHeight;
-            var contentHeight = typingArea.scrollHeight;
-            
-            if (autoScrollToBottom && contentHeight > paperHeight) {
-                paperTextElement.scrollTop = paperTextElement.scrollHeight;
-            } else {
-                if (contentHeight <= paperHeight) {
-                    paperTextElement.scrollTop = 0;
-                    autoScrollToBottom = false;
-                }
-            }
+        }
+
+        function scrollDownOneLine() {
+            var lineHeight = parseInt(window.getComputedStyle(typingArea).lineHeight, 10);
+            paperTextElement.scrollTop += lineHeight;
         }
 
         function calculateLinePosition() {
@@ -818,21 +810,14 @@
         }
 
         function scrollUp() {
-            autoScrollToBottom = false;
             paperTextElement.scrollTop -= 60;
         }
 
         function scrollDown() {
             paperTextElement.scrollTop += 60;
-            
-            var isNearBottom = paperTextElement.scrollTop >= paperTextElement.scrollHeight - paperTextElement.clientHeight - 20;
-            if (isNearBottom) {
-                autoScrollToBottom = true;
-            }
         }
 
         function scrollToBottom() {
-            autoScrollToBottom = true;
             paperTextElement.scrollTop = paperTextElement.scrollHeight;
         }
 
@@ -847,6 +832,7 @@
                 currentLinePosition = 0;
                 animateTypeBar('Return');
                 playTypewriterSound('return', 0);
+                scrollDownOneLine();
             } else if (char === ' ') {
                 if (carriageReturnMode && calculateLinePosition() >= maxLineLength) {
                     playTypewriterSound('return', 0);
@@ -863,7 +849,7 @@
                         playTypewriterSound('return', 0);
                         return;
                     }
-                    if (currentLinePos === maxLineLength - 5) {
+                    if (currentLinePos === Math.max(maxLineLength - 5, 0)) {
                         playWarningDing();
                     }
                 }
@@ -888,13 +874,6 @@
             }
             
             updatePaperText();
-            
-            var paperHeight = paperTextElement.clientHeight;
-            var contentHeight = typingArea.scrollHeight;
-            if (contentHeight > paperHeight * 0.8) {
-                autoScrollToBottom = true;
-            }
-            
             updateMarginIndicator();
         }
 
@@ -915,23 +894,21 @@
         function newDocument() {
             if (paperText.trim() && paperText.trim() !== 'The quick brown fox jumps over the lazy dog.') {
                 if (confirm('Are you sure you want to start a new document? Any unsaved work will be lost.')) {
-                    paperText = '';
-                    currentLinePosition = 0;
-                    autoScrollToBottom = false;
-                    updatePaperText();
-                    updateMarginIndicator();
-                    paperTextElement.scrollTop = 0;
-                    initAudioContext();
+                    clearDocument();
                 }
             } else {
-                paperText = '';
-                currentLinePosition = 0;
-                autoScrollToBottom = false;
-                updatePaperText();
-                updateMarginIndicator();
-                paperTextElement.scrollTop = 0;
-                initAudioContext();
+                clearDocument();
             }
+        }
+
+        function clearDocument() {
+            paperText = '';
+            currentLinePosition = 0;
+            paperTextElement.scrollTop = 0;
+            typingArea.innerHTML = '';
+            updatePaperText();
+            updateMarginIndicator();
+            initAudioContext();
         }
 
         function changeKeyboardColor(color) {
@@ -1020,7 +997,6 @@
             e.preventDefault();
             
             if (e.deltaY < 0) {
-                autoScrollToBottom = false;
                 scrollUp();
             } else {
                 scrollDown();
@@ -1172,7 +1148,6 @@
         setTimeout(function() {
             paperText = "The quick brown fox jumps over the lazy dog.\n\n";
             currentLinePosition = 0;
-            autoScrollToBottom = false;
             updatePaperText();
             updateMarginIndicator();
             paperTextElement.scrollTop = 0;
