@@ -349,7 +349,8 @@
                 if (col < MAX_COLS) {
                     lines[row] += " ";
                     col++;
-                    play('type', 0.5);
+                    play('type', 0.4); // Softer space sound
+                    if (col === BELL_AT) play('bell');
                 }
             } else if (k.length === 1) {
                 if (col >= MAX_COLS) { isLocked = true; return; }
