@@ -11,6 +11,7 @@
             --line-height: 28px;
             --paper-width: 1200px;
             --paper-padding: 200px;
+            --ink-color: #222;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,6 +46,22 @@
             z-index: 1;
         }
 
+        /* Paper Support Arms */
+        .paper-support {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 150px;
+            border-left: 4px solid #444;
+            border-right: 4px solid #444;
+            clip-path: polygon(0% 100%, 50% 0%, 100% 100%);
+            background: linear-gradient(to top, transparent, #222);
+            z-index: 0;
+            opacity: 0.6;
+        }
+
         /* Carriage moves the paper. Left 50% is the strike point. */
         #carriage {
             position: absolute;
@@ -72,10 +89,36 @@
         #paper-text {
             font-size: 18px;
             line-height: var(--line-height);
-            color: #222;
+            color: var(--ink-color);
             font-weight: bold;
             white-space: pre;
         }
+
+        .ribbon-vibrator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 50px;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .vibrator-arm {
+            position: absolute;
+            bottom: 0;
+            width: 4px;
+            height: 30px;
+            background: #555;
+            transition: transform 0.1s cubic-bezier(0.1, 0.5, 0.1, 1);
+        }
+
+        .vibrator-arm.left { left: 10px; transform-origin: bottom right; }
+        .vibrator-arm.right { right: 10px; transform-origin: bottom left; }
+
+        .vibrator-striking .vibrator-arm.left { transform: rotate(-30deg) translateY(-15px); }
+        .vibrator-striking .vibrator-arm.right { transform: rotate(30deg) translateY(-15px); }
 
         .ribbon-guide {
             position: absolute;
@@ -120,6 +163,7 @@
             border: 1px solid #666; background: #eee;
             cursor: pointer; font-weight: bold; font-size: 12px;
             box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
         }
         .btn:active { transform: translateY(2px); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
         .btn.active { background: #4caf50; color: white; }
@@ -187,10 +231,28 @@
             color: #eee; font-size: 14px; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px #000, inset 0 1px 1px rgba(255,255,255,0.1);
+            user-select: none;
         }
         .key:active, .key.pressed { transform: translateY(3px); box-shadow: 0 1px #000; }
         .key-wide { width: 70px; border-radius: 20px; }
         .space { width: 320px; border-radius: 20px; }
+
+        /* Ribbon Color Selector */
+        .ribbon-selector {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 50;
+        }
+        .ribbon-dot {
+            width: 20px; height: 20px; border-radius: 50%;
+            border: 2px solid #fff; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .ribbon-dot.active { border-color: #ffd700; transform: scale(1.2); }
 
         /* Color Picker */
         .color-picker {
@@ -217,11 +279,16 @@
 </head>
 <body>
     <div class="viewport">
+        <div class="paper-support"></div>
         <div class="platen"></div>
         <div id="carriage">
             <div id="paper">
                 <div id="paper-text"></div>
             </div>
+        </div>
+        <div class="ribbon-vibrator" id="vibrator">
+            <div class="vibrator-arm left"></div>
+            <div class="vibrator-arm right"></div>
         </div>
         <div class="ribbon-guide"><div class="strike-mark"></div></div>
         <div class="controls">
@@ -253,22 +320,28 @@
             <div class="color-dot" style="background: #4A4A4A" data-color="#4A4A4A"></div>
             <div class="color-dot" style="background: #A3C1AD" data-color="#A3C1AD"></div>
         </div>
+        <div class="ribbon-selector">
+            <div class="ribbon-dot active" style="background: #222" data-ink="#222" title="Black Ribbon"></div>
+            <div class="ribbon-dot" style="background: #a00" data-ink="#a00" title="Red Ribbon"></div>
+            <div class="ribbon-dot" style="background: #fff" data-ink="transparent" title="Stencil Mode"></div>
+        </div>
     </div>
 
     <script>
         const MAX_COLS = 72;
         const BELL_AT = 65;
-        const CHAR_W = 10.8; // Hardcoded to prevent measurement "zooming" errors
+        const CHAR_W = 10.8;
         
         let lines = [""];
         let col = 0, row = 0;
-        let isShift = false, isMuted = false, isLocked = false;
+        let isShift = false, isShiftLock = false, isMuted = false, isLocked = false;
         let audioCtx = null;
 
         const carriage = document.getElementById('carriage');
         const paper = document.getElementById('paper');
         const paperText = document.getElementById('paper-text');
         const basket = document.getElementById('basket');
+        const vibrator = document.getElementById('vibrator');
 
         const keys = [
             ["1234567890-=", "Backspace"],
@@ -329,18 +402,16 @@
                     col--;
                     isLocked = false;
                     play('type', 0.7);
+                    update();
                 }
             } else if (k === "Enter") {
                 row++;
                 lines[row] = "";
                 col = 0;
                 isLocked = false;
-                
-                // Mechanical timing: Carriage return takes longer than a single step
                 carriage.style.transition = "transform 0.4s ease-in-out";
                 play('return');
                 update();
-                
                 setTimeout(() => {
                     carriage.style.transition = "transform 0.1s linear";
                 }, 400);
@@ -349,174 +420,124 @@
                 if (col < MAX_COLS) {
                     lines[row] += " ";
                     col++;
-                    play('type', 0.4); // Softer space sound
+                    play('type', 0.4);
                     if (col === BELL_AT) play('bell');
+                    update();
                 }
             } else if (k.length === 1) {
                 if (col >= MAX_COLS) { isLocked = true; return; }
-                const c = isShift ? k.toUpperCase() : k.toLowerCase();
+                const c = (isShift || isShiftLock) ? k.toUpperCase() : k.toLowerCase();
                 lines[row] += c;
                 col++;
                 strike(k.toLowerCase());
                 play('type');
                 if (col === BELL_AT) play('bell');
+                update();
             }
-            update();
         }
 
         function strike(c) {
             const b = document.getElementById(`bar-${c}`);
             if (!b) return;
             const old = b.style.transform;
-            b.dataset.char = isShift ? c.toUpperCase() : c.toLowerCase();
+            b.dataset.char = (isShift || isShiftLock) ? c.toUpperCase() : c.toLowerCase();
             b.classList.add('striking');
+            vibrator.classList.add('vibrator-striking');
             setTimeout(() => {
                 b.classList.remove('striking');
+                vibrator.classList.remove('vibrator-striking');
                 b.style.transform = old;
-            }, 100); // Snappier strike
+            }, 100);
         }
 
         function update() {
             paperText.textContent = lines.join("\n");
-            
-            // CARRIAGE MOVEMENT:
-            // The paper padding is 200px.
-            // When col=0, we want the start of the text (200px from left edge) at screen center.
-            // Since carriage is at left: 50%, we move it -200px.
             const tx = -200 - (col * CHAR_W);
             carriage.style.transform = `translateX(${tx}px)`;
-            
-            // PAPER VERTICAL:
             const ty = -(row * 28);
             paper.style.transform = `translateY(${ty}px)`;
         }
 
-        // --- Analogue Sound Synthesis ---
         function play(type, vol = 1) {
             if (isMuted || !audioCtx) return;
             const t = audioCtx.currentTime;
             
             if (type === 'type') {
-                // Mechanical "Clack" - Noise + Low thump
                 const bufferSize = audioCtx.sampleRate * 0.1;
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
                 const noise = audioCtx.createBufferSource();
                 noise.buffer = buffer;
-                
                 const noiseFilter = audioCtx.createBiquadFilter();
                 noiseFilter.type = 'bandpass';
                 noiseFilter.frequency.setValueAtTime(1200, t);
-                noiseFilter.Q.setValueAtTime(1, t);
-
                 const noiseGain = audioCtx.createGain();
                 noiseGain.gain.setValueAtTime(0.1 * vol, t);
                 noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-
-                noise.connect(noiseFilter);
-                noiseFilter.connect(noiseGain);
-                noiseGain.connect(audioCtx.destination);
+                noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
                 noise.start(t);
-
-                // Low-frequency thump
                 const osc = audioCtx.createOscillator();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(150, t);
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(150, t);
                 osc.frequency.exponentialRampToValueAtTime(50, t + 0.05);
-
                 const oscGain = audioCtx.createGain();
                 oscGain.gain.setValueAtTime(0.05 * vol, t);
                 oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-
-                osc.connect(oscGain);
-                oscGain.connect(audioCtx.destination);
-                osc.start(t);
-                osc.stop(t + 0.05);
-
+                osc.connect(oscGain); oscGain.connect(audioCtx.destination);
+                osc.start(t); osc.stop(t + 0.05);
             } else if (type === 'bell') {
-                // Pleasant resonating "Ding"
                 const freq1 = 1200, freq2 = 1500;
                 [freq1, freq2].forEach(f => {
                     const osc = audioCtx.createOscillator();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(f, t);
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(f, t);
                     const g = audioCtx.createGain();
                     g.gain.setValueAtTime(0.1, t);
                     g.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
-                    osc.connect(g);
-                    g.connect(audioCtx.destination);
-                    osc.start(t);
-                    osc.stop(t + 1.5);
+                    osc.connect(g); g.connect(audioCtx.destination);
+                    osc.start(t); osc.stop(t + 1.5);
                 });
             } else if (type === 'return') {
-                // Authentic Mechanical Carriage Return: Noise-based Slide + Ratchet + Stop
                 const dur = 0.4;
-                
-                // 1. Friction/Slide (Actual white noise for a metallic "whoosh")
                 const bufferSize = audioCtx.sampleRate * dur;
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
                 const friction = audioCtx.createBufferSource();
                 friction.buffer = buffer;
-                
                 const frictionFilter = audioCtx.createBiquadFilter();
-                frictionFilter.type = 'highpass';
-                frictionFilter.frequency.setValueAtTime(1000, t);
+                frictionFilter.type = 'highpass'; frictionFilter.frequency.setValueAtTime(1000, t);
                 frictionFilter.frequency.exponentialRampToValueAtTime(500, t + dur);
-
                 const frictionGain = audioCtx.createGain();
                 frictionGain.gain.setValueAtTime(0.015, t);
                 frictionGain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-
-                friction.connect(frictionFilter);
-                frictionFilter.connect(frictionGain);
-                frictionGain.connect(audioCtx.destination);
+                friction.connect(frictionFilter); frictionFilter.connect(frictionGain); frictionGain.connect(audioCtx.destination);
                 friction.start(t);
-
-                // 2. Ratchet Clicks (Series of fast pulses)
                 for (let i = 0; i < 15; i++) {
                     const ct = t + (i / 15) * dur;
                     const c = audioCtx.createOscillator();
-                    c.type = 'square';
-                    c.frequency.setValueAtTime(2500, ct);
+                    c.type = 'square'; c.frequency.setValueAtTime(2500, ct);
                     const cg = audioCtx.createGain();
                     cg.gain.setValueAtTime(0.01, ct);
                     cg.gain.exponentialRampToValueAtTime(0.001, ct + 0.005);
-                    c.connect(cg);
-                    cg.connect(audioCtx.destination);
-                    c.start(ct);
-                    c.stop(ct + 0.005);
+                    c.connect(cg); cg.connect(audioCtx.destination);
+                    c.start(ct); c.stop(ct + 0.005);
                 }
-
-                // 3. Final Clunk (Weighted mechanical stop)
                 const stopT = t + dur - 0.05;
                 const thump = audioCtx.createOscillator();
-                thump.type = 'triangle';
-                thump.frequency.setValueAtTime(80, stopT);
+                thump.type = 'triangle'; thump.frequency.setValueAtTime(80, stopT);
                 thump.frequency.exponentialRampToValueAtTime(30, stopT + 0.15);
                 const tg = audioCtx.createGain();
                 tg.gain.setValueAtTime(0.2, stopT);
                 tg.gain.exponentialRampToValueAtTime(0.001, stopT + 0.15);
-                thump.connect(tg);
-                tg.connect(audioCtx.destination);
-                thump.start(stopT);
-                thump.stop(stopT + 0.15);
-                
-                // Metallic impact highlight
+                thump.connect(tg); tg.connect(audioCtx.destination);
+                thump.start(stopT); thump.stop(stopT + 0.15);
                 const click = audioCtx.createOscillator();
-                click.type = 'square';
-                click.frequency.setValueAtTime(600, stopT);
+                click.type = 'square'; click.frequency.setValueAtTime(600, stopT);
                 const clg = audioCtx.createGain();
                 clg.gain.setValueAtTime(0.04, stopT);
                 clg.gain.exponentialRampToValueAtTime(0.001, stopT + 0.02);
-                click.connect(clg);
-                clg.connect(audioCtx.destination);
-                click.start(stopT);
-                click.stop(stopT + 0.02);
+                click.connect(clg); clg.connect(audioCtx.destination);
+                click.start(stopT); click.stop(stopT + 0.02);
             }
         }
 
@@ -528,12 +549,14 @@
         function attach() {
             document.addEventListener('keydown', e => {
                 if (e.key === "Shift") { isShift = true; return; }
+                if (e.key === "CapsLock") { isShiftLock = !isShiftLock; return; }
                 if (e.ctrlKey || e.metaKey) return;
                 const k = e.key;
                 const visual = document.querySelector(`.key[data-key="${k.toLowerCase()}"]`) || 
                                document.querySelector(`.key[data-key="${k}"]`);
                 if (visual) {
                     visual.classList.add('pressed');
+                    if (isShiftLock && k === "Shift") visual.classList.add('active');
                     setTimeout(() => visual.classList.remove('pressed'), 100);
                 }
                 if (k.length === 1 || k === "Enter" || k === "Backspace") {
@@ -546,7 +569,11 @@
             document.querySelectorAll('.key').forEach(el => {
                 el.addEventListener('click', () => {
                     const k = el.dataset.key;
-                    if (k === "Shift") { isShift = !isShift; el.classList.toggle('active'); return; }
+                    if (k === "Shift") { 
+                        if (isShiftLock) { isShiftLock = false; el.classList.remove('active'); }
+                        else { isShift = true; setTimeout(() => isShift = false, 200); }
+                        return; 
+                    }
                     type(k);
                 });
             });
@@ -569,6 +596,14 @@
             document.querySelectorAll('.color-dot').forEach(dot => {
                 dot.addEventListener('click', () => {
                     document.documentElement.style.setProperty('--typewriter-green', dot.dataset.color);
+                });
+            });
+
+            document.querySelectorAll('.ribbon-dot').forEach(dot => {
+                dot.addEventListener('click', () => {
+                    document.querySelectorAll('.ribbon-dot').forEach(d => d.classList.remove('active'));
+                    dot.classList.add('active');
+                    document.documentElement.style.setProperty('--ink-color', dot.dataset.ink);
                 });
             });
         }
