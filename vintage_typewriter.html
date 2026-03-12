@@ -44,7 +44,7 @@
             position: relative;
             overflow: hidden;
             box-shadow: inset 0 0 50px #000;
-            border-bottom: 8px solid #111;
+            border-bottom: 4px solid #111;
         }
 
         .platen {
@@ -187,7 +187,7 @@
             box-shadow: inset 0 10px 30px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
-            padding: 10px;
+            padding: 0 10px 10px 10px;
             z-index: 5;
             position: relative;
         }
@@ -289,16 +289,17 @@
                 --key-size: 8.5vw;
                 --key-gap: 1vw;
                 --char-width: 9.5px;
+                --paper-padding: 150px;
             }
-            .viewport { flex: 1.2; min-height: 35vh; }
-            .body-area { flex: 1.8; padding: 5px; justify-content: flex-end; }
+            .viewport { flex: 1.1; min-height: 35vh; border-bottom-width: 2px; }
+            .body-area { flex: 1.9; padding: 0 5px 5px 5px; justify-content: flex-start; }
             
             .paper-support { width: 200px; height: 120px; top: 30%; }
-            #paper { padding: 80px 150px; }
+            #paper { padding: 80px var(--paper-padding); }
             #paper-text { font-size: 16px; }
 
-            .basket { height: 100px; margin-bottom: 10px; display: flex; align-items: flex-start; }
-            .type-bar { height: 90px; }
+            .basket { height: 90px; margin-bottom: 5px; display: flex; align-items: flex-start; border-bottom: none; }
+            .type-bar { height: 80px; }
             .type-bar::after { font-size: 10px; bottom: -12px; }
             
             .picker-container {
@@ -306,7 +307,7 @@
                 justify-content: space-between;
                 width: 100%;
                 padding: 0 10px;
-                margin-bottom: 15px;
+                margin-bottom: 10px;
             }
 
             .color-picker, .ribbon-selector { 
@@ -316,7 +317,7 @@
             }
             .color-dot, .ribbon-dot { width: 24px; height: 24px; }
 
-            .keyboard { margin-top: 0; padding-bottom: 20px; width: 100%; }
+            .keyboard { margin-top: 0; padding-bottom: 15px; width: 100%; }
             .key { 
                 font-size: 14px; 
                 box-shadow: 0 2px #000;
@@ -611,7 +612,8 @@
             }).join("\n");
 
             const charW = getCharW();
-            const tx = -200 - (col * charW);
+            const padding = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--paper-padding')) || 200;
+            const tx = -padding - (col * charW);
             carriage.style.transform = `translateX(${tx}px)`;
             const ty = -(row * 28);
             paper.style.transform = `translateY(${ty}px)`;
