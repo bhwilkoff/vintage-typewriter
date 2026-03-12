@@ -307,7 +307,6 @@
                 width: 100%;
                 padding: 0 10px;
                 margin-bottom: 15px;
-                order: -1; /* Ensure it stays above keyboard */
             }
 
             .color-picker, .ribbon-selector { 
@@ -402,24 +401,38 @@
         const basket = document.getElementById('basket');
         const vibrator = document.getElementById('vibrator');
 
-        const layouts = {
+        const isMobile = window.innerWidth <= 600;
+        const layouts = isMobile ? {
             0: [ // Lowercase
                 ["1234567890", "Backspace"],
                 ["qwertyuiop"],
                 ["asdfghjkl", "Enter"],
-                ["Shift", "zxcvbnm", "?!"]
+                ["Shift", "zxcvbnm", "Shift"]
             ],
             1: [ // Uppercase
                 ["!@#$%^&*()", "Backspace"],
                 ["QWERTYUIOP"],
                 ["ASDFGHJKL", "Enter"],
-                ["Shift", "ZXCVBNM", "?!"]
+                ["Shift", "ZXCVBNM", "Shift"]
             ],
             2: [ // Symbols
                 ["1234567890", "Backspace"],
                 ["-/:;()$&@\""],
                 [".,?!'{}[]", "Enter"],
                 ["Shift", "#+=_\\|~<>", "Shift"]
+            ]
+        } : {
+            0: [ // Desktop Lowercase
+                ["1234567890-=", "Backspace"],
+                ["qwertyuiop[]\\"],
+                ["asdfghjkl;'", "Enter"],
+                ["Shift", "zxcvbnm,./", "Shift"]
+            ],
+            1: [ // Desktop Uppercase
+                ["!@#$%^&*()_+", "Backspace"],
+                ["QWERTYUIOP{}|"],
+                ["ASDFGHJKL:\"", "Enter"],
+                ["Shift", "ZXCVBNM<>?", "Shift"]
             ]
         };
 
@@ -435,12 +448,13 @@
         }
 
         function renderKeyboard() {
-            const layout = layouts[kbState];
+            const layout = layouts[kbState] || layouts[0];
             layout.forEach((r, i) => {
                 const container = document.getElementById(`r${i+1}`);
+                if (!container) return;
                 container.innerHTML = '';
                 r.forEach(group => {
-                    if (group.length > 1 && !["Backspace", "Enter", "Shift", "?!"].includes(group)) {
+                    if (group.length > 1 && !["Backspace", "Enter", "Shift"].includes(group)) {
                         group.split("").forEach(k => addKey(k, container));
                     } else {
                         addKey(group, container);
@@ -464,11 +478,7 @@
             let display = label;
             if (label === "Backspace") display = "←";
             else if (label === "Enter") display = "Ret";
-            else if (label === "Shift") {
-                if (kbState === 0) display = "ABC";
-                else if (kbState === 1) display = "#+=";
-                else display = "abc";
-            }
+            else if (label === "Shift") display = "Shift";
             
             div.textContent = display;
             div.dataset.key = label;
@@ -477,12 +487,21 @@
         }
 
         function renderBasket() {
-            const chars = "1234567890qwertyuiopasdfghjklzxcvbnm.?!@#$%^&*()/-:;()$&@\".,?!'{}[]#+=_\\|~<>".split("");
+            // Simplify basket to show only the keys that have physical bars (base layout keys)
+            const baseLayout = layouts[0];
+            const chars = baseLayout.flatMap(row => row.flatMap(group => {
+                if (group.length > 1 && !["Backspace", "Enter", "Shift"].includes(group)) {
+                    return group.split("");
+                }
+                return (group.length === 1) ? [group] : [];
+            }));
+            
             const uniqueChars = [...new Set(chars)];
+            basket.innerHTML = '';
             uniqueChars.forEach((c, i) => {
                 const bar = document.createElement('div');
                 bar.className = 'type-bar';
-                bar.id = `bar-${c.toLowerCase()}`; // ID by lower char
+                bar.id = `bar-${c.toLowerCase()}`; // Identify by physical key char
                 bar.dataset.char = c.toUpperCase();
                 const angle = -75 + (i / (uniqueChars.length-1)) * 150;
                 bar.style.transform = `rotate(${angle}deg)`;
@@ -492,13 +511,14 @@
 
         function handleInput(k) {
             if (k === "Shift") {
-                kbState = (kbState + 1) % 3;
+                const maxStates = Object.keys(layouts).length;
+                kbState = (kbState + 1) % maxStates;
                 renderKeyboard();
                 return;
             }
             type(k);
-            // One-shot shift behavior: reset to lowercase after typing a capital letter
-            if (kbState === 1 && k.length === 1) {
+            // One-shot shift behavior: reset to lowercase after typing if shift was active
+            if (kbState > 0 && k.length === 1) {
                 kbState = 0;
                 renderKeyboard();
             }
@@ -538,9 +558,9 @@
                     if (col === BELL_AT) play('bell');
                     update();
                 }
-            } else if (k.length === 1 || k === "?!") {
+            } else if (k.length === 1) {
                 if (col >= MAX_COLS) { isLocked = true; return; }
-                const charToType = k === "?!" ? "." : k;
+                const charToType = k;
                 lines[row].push({c: charToType, color: inkColor});
                 col++;
                 strike(charToType);
@@ -551,7 +571,28 @@
         }
 
         function strike(c) {
-            const b = document.getElementById(`bar-${c.toLowerCase()}`);
+            // Find the physical bar for this key. 
+            // Most symbols share a bar with a letter or number.
+            // We'll map characters to their base keys for animation.
+            let baseChar = c.toLowerCase();
+            
+            // Reverse lookup to find which base key produced this char
+            for (let state in layouts) {
+                layouts[state].forEach((row, rIdx) => {
+                    row.forEach((group, gIdx) => {
+                        if (group.includes(c)) {
+                            // Find corresponding key in layouts[0]
+                            const baseGroup = layouts[0][rIdx][gIdx];
+                            if (baseGroup.length === group.length) {
+                                const charIdx = group.indexOf(c);
+                                baseChar = baseGroup[charIdx].toLowerCase();
+                            }
+                        }
+                    });
+                });
+            }
+
+            const b = document.getElementById(`bar-${baseChar}`);
             if (!b) return;
             const old = b.style.transform;
             b.dataset.char = c.toUpperCase();
