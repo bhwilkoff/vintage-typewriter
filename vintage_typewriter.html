@@ -6,37 +6,24 @@
     <title>Vintage Typewriter</title>
     <style>
         :root {
-<<<<<<< HEAD
             --typewriter-green: #2E4A3D;
             --char-width: 10.8px;
             --line-height: 28px;
             --paper-width: 800px;
             --paper-padding: 80px;
-=======
-            --body-color: #2E4A3D; /* Classic Smith-Corona Green */
-            --paper-width: 800px;
-            --paper-margin: 80px;
-            --char-width: 10.8px;
-            --line-height: 28px;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Courier New', Courier, monospace;
-<<<<<<< HEAD
             background: #d0d0d0;
-=======
-            background: #ccc;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-<<<<<<< HEAD
         /* --- Viewport --- */
         .viewport {
             flex: 1.2;
@@ -48,34 +35,16 @@
         }
 
         .platen {
-=======
-        /* --- Viewport Area --- */
-        .viewport {
-            flex: 1.5;
-            background: #1a1a1a;
-            position: relative;
-            overflow: hidden;
-            box-shadow: inset 0 0 40px #000;
-            border-bottom: 10px solid #111;
-        }
-
-        .platen-roller {
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             position: absolute;
             top: 50%;
             left: 0;
             width: 100%;
-<<<<<<< HEAD
             height: 60px;
-=======
-            height: 70px;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             background: linear-gradient(to bottom, #111, #333 50%, #111);
             transform: translateY(-50%);
             z-index: 1;
         }
 
-<<<<<<< HEAD
         #carriage {
             position: absolute;
             top: 0;
@@ -84,35 +53,17 @@
             z-index: 2;
             transition: transform 0.1s cubic-bezier(0.1, 0.5, 0.1, 1);
             pointer-events: none;
-=======
-        /* The key to the fix: Absolute left 50% puts the paper origin at center screen */
-        #carriage {
-            position: absolute;
-            top: 0;
-            left: 50%; 
-            height: 100%;
-            z-index: 2;
-            transition: transform 0.1s cubic-bezier(0.1, 0.5, 0.1, 1);
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         }
 
         #paper {
             width: var(--paper-width);
             min-height: 1500px;
             background: #fff;
-<<<<<<< HEAD
             box-shadow: 0 0 15px rgba(0,0,0,0.5);
             padding: 100px var(--paper-padding);
             position: absolute;
             top: 50%; /* Center vertically on platen */
             margin-top: -100px; /* Adjust based on padding */
-=======
-            padding: 100px var(--paper-margin);
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            position: absolute;
-            top: 50%;
-            margin-top: -100px; /* Vertically center based on padding/size */
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             transition: transform 0.2s ease-out;
         }
 
@@ -122,36 +73,23 @@
             color: #222;
             font-weight: bold;
             white-space: pre;
-<<<<<<< HEAD
             word-break: break-all;
         }
 
         .ribbon-guide {
-=======
-        }
-
-        .strike-zone {
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 50px;
             height: 40px;
-<<<<<<< HEAD
             border: 2px solid #888;
             border-top: none;
             border-radius: 0 0 5px 5px;
-=======
-            border: 2px solid rgba(255,255,255,0.2);
-            border-top: none;
-            border-radius: 0 0 10px 10px;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             z-index: 10;
             pointer-events: none;
         }
 
-<<<<<<< HEAD
         .strike-mark {
             position: absolute;
             top: -10px;
@@ -164,31 +102,16 @@
 
         /* --- Controls --- */
         .controls {
-=======
-        .red-dot {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            width: 2px;
-            height: 10px;
-            background: red;
-            opacity: 0.5;
-        }
-
-        /* --- UI Overlay --- */
-        .ui-overlay {
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             position: absolute;
             top: 20px;
             left: 20px;
             right: 20px;
             display: flex;
             justify-content: space-between;
-            z-index: 30;
+            z-index: 20;
             pointer-events: none;
         }
 
-<<<<<<< HEAD
         .btn-col { display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
 
         .btn {
@@ -224,99 +147,24 @@
             transform-origin: bottom center;
             transition: transform 0.12s cubic-bezier(0.1, 0.5, 0.1, 1);
             border-radius: 2px;
-=======
-        .btn-group { display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
-
-        .btn {
-            width: 42px; height: 42px; border-radius: 50%;
-            border: 2px solid #666; background: #f0f0f0;
-            cursor: pointer; font-weight: bold; font-size: 14px;
-            box-shadow: 0 4px 0 #999, 0 6px 10px rgba(0,0,0,0.3);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #999; }
-        .btn.active { background: #4caf50; color: white; border-color: #2e7d32; }
-
-        /* --- Typewriter Body --- */
-        .typewriter-body {
-            flex: 1.2;
-            background: var(--body-color);
-            position: relative;
-            box-shadow: inset 0 10px 30px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            z-index: 5;
-        }
-
-        /* The Basket (Letters) */
-        .basket {
-            width: 100%;
-            height: 80px;
-            position: relative;
-            margin-bottom: 10px;
-            perspective: 1000px;
-        }
-
-        .type-bar {
-            position: absolute;
-            bottom: -40px;
-            left: 50%;
-            width: 3px;
-            height: 140px;
-            background: linear-gradient(to top, #222, #888);
-            transform-origin: bottom center;
-            transition: transform 0.12s cubic-bezier(0.1, 0.5, 0.1, 1);
-            border-radius: 2px;
-            pointer-events: none;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         }
 
         .type-bar::after {
             content: attr(data-char);
-<<<<<<< HEAD
             position: absolute; top: -12px; left: 50%;
             transform: translateX(-50%) rotate(180deg);
             font-size: 9px; color: #eee; font-weight: bold;
-=======
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            color: #fff;
-            font-weight: bold;
-            text-shadow: 0 1px 2px #000;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         }
 
         .type-bar.striking {
             z-index: 100;
-<<<<<<< HEAD
             transform: rotateX(-85deg) rotateY(0deg) rotateZ(0deg) translateY(-180px) !important;
         }
 
         .keyboard { max-width: 800px; margin: 0 auto; }
         .row { display: flex; justify-content: center; gap: 5px; margin-bottom: 6px; }
-=======
-            /* Animation to hit platen center */
-            transform: translateY(-240px) rotateX(-80deg) rotate(0deg) !important;
-        }
-
-        /* Keyboard */
-        .keyboard {
-            max-width: 850px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
-
-        .row { display: flex; justify-content: center; gap: 6px; }
 
         .key {
-<<<<<<< HEAD
             width: 42px; height: 42px; border-radius: 50%;
             background: #111; border: 2px solid #000;
             color: #eee; font-size: 14px; font-weight: bold;
@@ -331,55 +179,17 @@
             .key { width: 32px; height: 32px; font-size: 11px; }
             .space { width: 150px; }
             .key-wide { width: 50px; }
-=======
-            width: 44px; height: 44px; border-radius: 50%;
-            background: #111; border: 2px solid #000;
-            box-shadow: 0 4px 0 #000, 0 6px 8px rgba(0,0,0,0.4);
-            color: #eee; font-weight: bold; font-size: 14px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; user-select: none;
-        }
-        .key:active, .key.pressed { transform: translateY(4px); box-shadow: 0 0 0 #000; }
-        .key-wide { width: 70px; border-radius: 22px; }
-        .space { width: 320px; border-radius: 22px; }
-
-        /* Color Picker */
-        .color-picker {
-            position: absolute;
-            bottom: 15px;
-            left: 15px;
-            display: flex;
-            gap: 8px;
-        }
-
-        .dot {
-            width: 24px; height: 24px; border-radius: 50%;
-            border: 2px solid white; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-
-        @media (max-width: 600px) {
-            .key { width: 34px; height: 34px; font-size: 11px; }
-            .space { width: 160px; }
-            .key-wide { width: 50px; }
-            .type-bar { height: 100px; }
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         }
     </style>
 </head>
 <body>
     <div class="viewport">
-<<<<<<< HEAD
         <div class="platen"></div>
-=======
-        <div class="platen-roller"></div>
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         <div id="carriage">
             <div id="paper">
                 <div id="paper-text"></div>
             </div>
         </div>
-<<<<<<< HEAD
         <div class="ribbon-guide"><div class="strike-mark"></div></div>
         <div class="controls">
             <div class="btn-col">
@@ -390,24 +200,10 @@
                 <button class="btn" id="scroll-up">▲</button>
                 <button class="btn" id="scroll-down">▼</button>
                 <button class="btn active" id="sound-toggle">♪</button>
-=======
-        <div class="strike-zone"><div class="red-dot"></div></div>
-        
-        <div class="ui-overlay">
-            <div class="btn-group">
-                <button class="btn" id="save-btn" title="Save as .txt">S</button>
-                <button class="btn" id="new-btn" title="Clear Document">N</button>
-            </div>
-            <div class="btn-group">
-                <button class="btn" id="scroll-up">▲</button>
-                <button class="btn" id="scroll-down">▼</button>
-                <button class="btn active" id="sound-btn">♪</button>
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             </div>
         </div>
     </div>
 
-<<<<<<< HEAD
     <div class="body-area" id="body-panel">
         <div class="basket" id="basket"></div>
         <div class="keyboard">
@@ -416,22 +212,10 @@
             <div class="row" id="r3"></div>
             <div class="row" id="r4"></div>
             <div class="row"><div class="key space" data-key=" "></div></div>
-=======
-    <div class="typewriter-body" id="main-body">
-        <div class="basket" id="basket"></div>
-        <div class="keyboard" id="kb"></div>
-        <div class="color-picker">
-            <div class="dot" style="background: #2E4A3D" data-color="#2E4A3D"></div>
-            <div class="dot" style="background: #AEC6CF" data-color="#AEC6CF"></div>
-            <div class="dot" style="background: #F88379" data-color="#F88379"></div>
-            <div class="dot" style="background: #EDC9AF" data-color="#EDC9AF"></div>
-            <div class="dot" style="background: #8C92AC" data-color="#8C92AC"></div>
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         </div>
     </div>
 
     <script>
-<<<<<<< HEAD
         const MAX_COLS = 70;
         const BELL_AT = 65;
         
@@ -439,31 +223,14 @@
         let col = 0, row = 0;
         let isShift = false, isMuted = false, isLocked = false;
         let charW = 10.8;
-=======
-        // Config
-        const BELL_COL = 65;
-        const MAX_COL = 72;
-        
-        // State
-        let lines = [""];
-        let row = 0, col = 0;
-        let charW = 10.8;
-        let isShift = false, isMuted = false, isLocked = false;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         let audioCtx = null;
 
         const carriage = document.getElementById('carriage');
         const paper = document.getElementById('paper');
         const paperText = document.getElementById('paper-text');
         const basket = document.getElementById('basket');
-<<<<<<< HEAD
 
         const keys = [
-=======
-        const kb = document.getElementById('kb');
-
-        const layout = [
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             ["1234567890-=", "Backspace"],
             ["qwertyuiop[]\\"],
             ["asdfghjkl;'", "Enter"],
@@ -472,7 +239,6 @@
 
         function init() {
             measure();
-<<<<<<< HEAD
             renderKeyboard();
             renderBasket();
             attach();
@@ -525,70 +291,6 @@
 
         function type(k) {
             if (isLocked && k !== "Enter" && k !== "Backspace") return;
-=======
-            buildKeyboard();
-            buildBasket();
-            bindEvents();
-            refresh();
-        }
-
-        function measure() {
-            const span = document.createElement('span');
-            span.style.font = "bold 18px 'Courier New'";
-            span.textContent = "M";
-            document.body.appendChild(span);
-            charW = span.getBoundingClientRect().width;
-            document.body.removeChild(span);
-        }
-
-        function buildKeyboard() {
-            layout.forEach(rowData => {
-                const r = document.createElement('div');
-                r.className = 'row';
-                rowData.forEach(item => {
-                    if (item.length > 1 && !["Backspace", "Enter", "Shift"].includes(item)) {
-                        item.split("").forEach(char => createKey(char, r));
-                    } else {
-                        createKey(item, r);
-                    }
-                });
-                kb.appendChild(r);
-            });
-            // Spacebar row
-            const sr = document.createElement('div');
-            sr.className = 'row';
-            const sk = document.createElement('div');
-            sk.className = 'key space';
-            sk.dataset.key = ' ';
-            sr.appendChild(sk);
-            kb.appendChild(sr);
-        }
-
-        function createKey(val, parent) {
-            const k = document.createElement('div');
-            k.className = 'key';
-            if (val.length > 1) k.classList.add('key-wide');
-            k.textContent = val === "Backspace" ? "←" : val === "Enter" ? "Ret" : val;
-            k.dataset.key = val;
-            parent.appendChild(k);
-        }
-
-        function buildBasket() {
-            const chars = "1234567890qwertyuiopasdfghjklzxcvbnm,./".split("");
-            chars.forEach((c, i) => {
-                const b = document.createElement('div');
-                b.className = 'type-bar';
-                b.id = `bar-${c}`;
-                b.dataset.char = c.toUpperCase();
-                const angle = -70 + (i / (chars.length-1)) * 140;
-                b.style.transform = `rotate(${angle}deg)`;
-                basket.appendChild(b);
-            });
-        }
-
-        function handleInput(k) {
-            if (isLocked && !["Enter", "Backspace"].includes(k)) return;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             initAudio();
 
             if (k === "Backspace") {
@@ -599,7 +301,6 @@
                     play('type', 0.7);
                 }
             } else if (k === "Enter") {
-<<<<<<< HEAD
                 row++;
                 lines[row] = "";
                 col = 0;
@@ -609,21 +310,11 @@
                 return;
             } else if (k === " ") {
                 if (col < MAX_COLS) {
-=======
-                lines.push("");
-                row++;
-                col = 0;
-                isLocked = false;
-                play('return');
-            } else if (k === " ") {
-                if (col < MAX_COL) {
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
                     lines[row] += " ";
                     col++;
                     play('type', 0.5);
                 }
             } else if (k.length === 1) {
-<<<<<<< HEAD
                 if (col >= MAX_COLS) { isLocked = true; return; }
                 const c = isShift ? k.toUpperCase() : k.toLowerCase();
                 lines[row] += c;
@@ -639,28 +330,10 @@
             const b = document.getElementById(`bar-${c}`);
             if (!b) return;
             const old = b.style.transform;
-=======
-                if (col >= MAX_COL) { isLocked = true; return; }
-                const char = isShift ? k.toUpperCase() : k.toLowerCase();
-                lines[row] += char;
-                col++;
-                doStrike(k.toLowerCase());
-                play('type');
-                if (col === BELL_COL) play('bell');
-            }
-            refresh();
-        }
-
-        function doStrike(c) {
-            const b = document.getElementById(`bar-${c}`);
-            if (!b) return;
-            const orig = b.style.transform;
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             b.dataset.char = isShift ? c.toUpperCase() : c.toLowerCase();
             b.classList.add('striking');
             setTimeout(() => {
                 b.classList.remove('striking');
-<<<<<<< HEAD
                 b.style.transform = old;
             }, 150);
         }
@@ -699,59 +372,16 @@
             osc.start(); osc.stop(t + (type === 'bell' ? 0.5 : 0.1));
         }
 
-=======
-                b.style.transform = orig;
-            }, 120);
-        }
-
-        function refresh() {
-            paperText.textContent = lines.join("\n");
-            // Precise Carriage Move
-            const moveX = -(80 + col * charW);
-            carriage.style.transform = `translateX(${moveX}px)`;
-            // Paper Scroll
-            const moveY = -(row * 28);
-            paper.style.transform = `translateY(${moveY}px)`;
-        }
-
-        function play(type, vol = 1) {
-            if (isMuted || !audioCtx) return;
-            const t = audioCtx.currentTime;
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            if (type === 'type') {
-                o.type = 'square'; o.frequency.setValueAtTime(150, t);
-                o.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-                g.gain.setValueAtTime(0.1 * vol, t);
-            } else if (type === 'bell') {
-                o.type = 'sine'; o.frequency.setValueAtTime(1200, t);
-                g.gain.setValueAtTime(0.2, t);
-            } else if (type === 'return') {
-                o.type = 'sawtooth'; o.frequency.setValueAtTime(100, t);
-                o.frequency.linearRampToValueAtTime(400, t + 0.4);
-                g.gain.setValueAtTime(0.1, t);
-            }
-            o.connect(g); g.connect(audioCtx.destination);
-            o.start(); o.stop(t + (type === 'bell' ? 0.5 : 0.1));
-        }
-
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
         function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-<<<<<<< HEAD
         function attach() {
-=======
-        function bindEvents() {
-            // Physical keys
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             document.addEventListener('keydown', e => {
                 if (e.key === "Shift") { isShift = true; return; }
                 if (e.ctrlKey || e.metaKey) return;
                 const k = e.key;
-<<<<<<< HEAD
                 const visual = document.querySelector(`.key[data-key="${k.toLowerCase()}"]`) || 
                                document.querySelector(`.key[data-key="${k}"]`);
                 if (visual) {
@@ -765,21 +395,10 @@
             });
             document.addEventListener('keyup', e => { if (e.key === "Shift") isShift = false; });
 
-=======
-                const vk = document.querySelector(`.key[data-key="${k.toLowerCase()}"]`) || 
-                           document.querySelector(`.key[data-key="${k}"]`);
-                if (vk) { vk.classList.add('pressed'); setTimeout(() => vk.classList.remove('pressed'), 100); }
-                if (k.length === 1 || k === "Enter" || k === "Backspace") { e.preventDefault(); handleInput(k); }
-            });
-            document.addEventListener('keyup', e => { if (e.key === "Shift") isShift = false; });
-
-            // Virtual keys
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             document.querySelectorAll('.key').forEach(el => {
                 el.addEventListener('click', () => {
                     const k = el.dataset.key;
                     if (k === "Shift") { isShift = !isShift; el.classList.toggle('active'); return; }
-<<<<<<< HEAD
                     type(k);
                 });
             });
@@ -789,31 +408,6 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = "typewriter.txt";
                 a.click(); URL.revokeObjectURL(url);
-=======
-                    handleInput(k);
-                });
-            });
-
-            // UI
-            document.getElementById('save-btn').addEventListener('click', () => {
-                const b = new Blob([lines.join("\n")], {type: 'text/plain'});
-                const u = URL.createObjectURL(b);
-                const a = document.createElement('a'); a.href = u; a.download = "typewriter.txt";
-                a.click(); URL.revokeObjectURL(u);
-            });
-            document.getElementById('new-btn').addEventListener('click', () => {
-                if (confirm("New Document?")) { lines = [""]; row = 0; col = 0; isLocked = false; refresh(); }
-            });
-            document.getElementById('scroll-up').addEventListener('click', () => { row = Math.max(0, row-1); refresh(); });
-            document.getElementById('scroll-down').addEventListener('click', () => { row++; if(!lines[row]) lines[row]=""; refresh(); });
-            document.getElementById('sound-btn').addEventListener('click', e => { isMuted = !isMuted; e.target.classList.toggle('active'); });
-
-            // Color Picker
-            document.querySelectorAll('.dot').forEach(d => {
-                d.addEventListener('click', () => {
-                    document.getElementById('main-body').style.backgroundColor = d.dataset.color;
-                });
->>>>>>> 4ee1176 (fix: precise carriage movement, corrected typebar orientation, and restored color picker)
             });
 
             document.getElementById('new-btn').addEventListener('click', () => {
