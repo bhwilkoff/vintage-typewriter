@@ -9,8 +9,8 @@
             --typewriter-green: #2E4A3D;
             --char-width: 10.8px;
             --line-height: 28px;
-            --paper-width: 800px;
-            --paper-padding: 80px;
+            --paper-width: 1200px;
+            --paper-padding: 200px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -48,7 +48,7 @@
         #carriage {
             position: absolute;
             top: 0;
-            left: 50%; /* Anchor point for typing */
+            left: 50%; /* Anchor point for typing (screen center) */
             height: 100%;
             z-index: 2;
             transition: transform 0.08s linear;
@@ -63,8 +63,9 @@
             padding: 100px var(--paper-padding);
             position: absolute;
             top: 50%; /* Center vertically on platen */
-            margin-top: -100px; /* Adjust based on padding */
+            margin-top: -100px; 
             transition: transform 0.2s ease-out;
+            left: 0; /* Align start to carriage left */
         }
 
         #paper-text {
@@ -129,22 +130,24 @@
             box-shadow: inset 0 10px 30px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
-            padding: 20px;
+            padding: 10px;
             z-index: 5;
             position: relative;
         }
 
+        /* Pivot area at top, fan downwards */
         .basket {
-            width: 100%; height: 80px;
-            margin: 0 auto 20px auto; position: relative;
-            perspective: 800px;
+            width: 100%; height: 120px;
+            margin: 0 auto; position: relative;
+            perspective: 1000px;
         }
 
         .type-bar {
-            position: absolute; bottom: 0px; left: 50%;
-            width: 3px; height: 120px;
-            background: linear-gradient(to top, #333, #aaa);
-            transform-origin: bottom center;
+            position: absolute; 
+            top: 0; left: 50%;
+            width: 3px; height: 140px;
+            background: linear-gradient(to bottom, #333, #aaa);
+            transform-origin: top center;
             transition: transform 0.12s cubic-bezier(0.1, 0.5, 0.1, 1);
             border-radius: 2px;
             pointer-events: none;
@@ -152,35 +155,36 @@
 
         .type-bar::after {
             content: attr(data-char);
-            position: absolute; top: -12px; left: 50%;
+            position: absolute; bottom: -15px; left: 50%;
             transform: translateX(-50%);
-            font-size: 9px; color: #eee; font-weight: bold;
+            font-size: 10px; color: #eee; font-weight: bold;
         }
 
         .type-bar.striking {
             z-index: 100;
-            transform: rotateX(-85deg) rotateY(0deg) rotateZ(0deg) translateY(-200px) !important;
+            /* Flip UP to strike the paper */
+            transform: rotateX(-165deg) rotateY(0deg) rotateZ(0deg) translateY(240px) !important;
         }
 
-        .keyboard { max-width: 800px; margin: 0 auto; position: relative; z-index: 10; }
-        .row { display: flex; justify-content: center; gap: 5px; margin-bottom: 6px; }
+        .keyboard { max-width: 850px; margin: 0 auto; position: relative; z-index: 10; padding-top: 10px; }
+        .row { display: flex; justify-content: center; gap: 6px; margin-bottom: 6px; }
 
         .key {
-            width: 42px; height: 42px; border-radius: 50%;
+            width: 44px; height: 44px; border-radius: 50%;
             background: #111; border: 2px solid #000;
             color: #eee; font-size: 14px; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; box-shadow: 0 4px #000;
         }
         .key:active, .key.pressed { transform: translateY(3px); box-shadow: 0 1px #000; }
-        .key-wide { width: 65px; border-radius: 20px; }
-        .space { width: 300px; border-radius: 20px; }
+        .key-wide { width: 70px; border-radius: 20px; }
+        .space { width: 320px; border-radius: 20px; }
 
         /* Color Picker */
         .color-picker {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
+            bottom: 15px;
+            left: 15px;
             display: flex;
             gap: 10px;
             z-index: 50;
@@ -192,10 +196,10 @@
         }
 
         @media (max-width: 600px) {
-            .key { width: 32px; height: 32px; font-size: 11px; }
-            .space { width: 150px; }
+            .key { width: 34px; height: 34px; font-size: 11px; }
+            .space { width: 160px; }
             .key-wide { width: 50px; }
-            .color-picker { bottom: 10px; left: 10px; }
+            .type-bar { height: 100px; }
         }
     </style>
 </head>
@@ -240,7 +244,7 @@
     </div>
 
     <script>
-        const MAX_COLS = 70;
+        const MAX_COLS = 72;
         const BELL_AT = 65;
         
         let lines = [""];
@@ -274,7 +278,7 @@
             s.style.font = "bold 18px 'Courier New'";
             s.textContent = "M";
             document.body.appendChild(s);
-            charW = s.getBoundingClientRect().width;
+            charW = s.getBoundingClientRect().width || 10.8;
             document.body.removeChild(s);
         }
 
@@ -307,6 +311,7 @@
                 bar.className = 'type-bar';
                 bar.id = `bar-${c}`;
                 bar.dataset.char = c.toUpperCase();
+                // Fan downwards from the top pivot point
                 const angle = -70 + (i / (chars.length-1)) * 140;
                 bar.style.transform = `rotate(${angle}deg)`;
                 basket.appendChild(bar);
@@ -359,18 +364,21 @@
             setTimeout(() => {
                 b.classList.remove('striking');
                 b.style.transform = old;
-            }, 150);
+            }, 120);
         }
 
         function update() {
             paperText.textContent = lines.join("\n");
-            // CARRIAGE: Base is 50% left. Paper padding is 80px.
-            // When col=0, we want paper x=80 at screen center.
-            // So translate = -80px.
-            const tx = -80 - (col * charW);
+            
+            // CARRIAGE MOVEMENT:
+            // Center point is 50%. The paper padding is 200px.
+            // When col=0, the character 'cursor' is at paper x = 200.
+            // We want paper x = 200 to be at screen center.
+            // Since carriage is at left: 50%, translate -200px moves paper start to center.
+            const tx = -200 - (col * charW);
             carriage.style.transform = `translateX(${tx}px)`;
             
-            // PAPER Y: Move up by line height
+            // PAPER VERTICAL:
             const ty = -(row * 28);
             paper.style.transform = `translateY(${ty}px)`;
         }
@@ -385,11 +393,11 @@
                 osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
                 g.gain.setValueAtTime(0.1 * vol, t);
             } else if (type === 'bell') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, t);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1200, t);
                 g.gain.setValueAtTime(0.2, t);
             } else if (type === 'return') {
                 osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, t);
-                osc.frequency.linearRampToValueAtTime(300, t + 0.4);
+                osc.frequency.linearRampToValueAtTime(400, t + 0.4);
                 g.gain.setValueAtTime(0.1, t);
             }
             osc.connect(g); g.connect(audioCtx.destination);
@@ -442,7 +450,6 @@
             document.getElementById('scroll-down').addEventListener('click', () => { row++; if(!lines[row]) lines[row]=""; update(); });
             document.getElementById('sound-toggle').addEventListener('click', e => { isMuted = !isMuted; e.target.classList.toggle('active'); });
 
-            // Color Picker logic
             document.querySelectorAll('.color-dot').forEach(dot => {
                 dot.addEventListener('click', () => {
                     document.documentElement.style.setProperty('--typewriter-green', dot.dataset.color);
@@ -451,6 +458,9 @@
         }
 
         init();
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
