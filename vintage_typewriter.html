@@ -166,15 +166,16 @@
 
         .type-bar.striking {
             z-index: 100;
-            /* 3D Swing: Pivot from top, swing up and back to hit the platen */
-            /* rotate(0deg) centers it horizontally, rotateX swings it up */
-            transform: rotate(0deg) rotateX(-145deg) translateZ(40px) !important;
-            background: linear-gradient(to bottom, #666, #aaa);
+            /* 3D Swing: Pivot from top, swing up to precisely hit the strike zone */
+            /* rotateX(-155deg) ensures the tip (bottom of the 130px bar) hits the center of the viewport */
+            transform: rotate(0deg) rotateX(-155deg) translateZ(10px) !important;
+            background: linear-gradient(to bottom, #777, #fff);
+            filter: brightness(1.2);
         }
 
         .keyboard { 
             max-width: 850px; 
-            margin: 20px auto 0 auto; /* Added margin to clear the basket */
+            margin: 15px auto 0 auto;
             position: relative; 
             z-index: 10; 
         }
@@ -182,10 +183,10 @@
 
         .key {
             width: 44px; height: 44px; border-radius: 50%;
-            background: #111; border: 2px solid #000;
+            background: #111; border: 2px solid #333;
             color: #eee; font-size: 14px; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 4px #000;
+            cursor: pointer; box-shadow: 0 4px #000, inset 0 1px 1px rgba(255,255,255,0.1);
         }
         .key:active, .key.pressed { transform: translateY(3px); box-shadow: 0 1px #000; }
         .key-wide { width: 70px; border-radius: 20px; }
@@ -364,7 +365,7 @@
             setTimeout(() => {
                 b.classList.remove('striking');
                 b.style.transform = old;
-            }, 120);
+            }, 100); // Snappier strike
         }
 
         function update() {
@@ -382,25 +383,79 @@
             paper.style.transform = `translateY(${ty}px)`;
         }
 
+        // --- Analogue Sound Synthesis ---
         function play(type, vol = 1) {
             if (isMuted || !audioCtx) return;
             const t = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
+            
             if (type === 'type') {
-                osc.type = 'square'; osc.frequency.setValueAtTime(150, t);
-                osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-                g.gain.setValueAtTime(0.1 * vol, t);
+                // Mechanical "Clack" - Noise + Low thump
+                const bufferSize = audioCtx.sampleRate * 0.1;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const noiseFilter = audioCtx.createBiquadFilter();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.setValueAtTime(1200, t);
+                noiseFilter.Q.setValueAtTime(1, t);
+
+                const noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(0.1 * vol, t);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+                noise.start(t);
+
+                // Low-frequency thump
+                const osc = audioCtx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, t);
+                osc.frequency.exponentialRampToValueAtTime(50, t + 0.05);
+
+                const oscGain = audioCtx.createGain();
+                oscGain.gain.setValueAtTime(0.05 * vol, t);
+                oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+                osc.connect(oscGain);
+                oscGain.connect(audioCtx.destination);
+                osc.start(t);
+                osc.stop(t + 0.05);
+
             } else if (type === 'bell') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(1200, t);
-                g.gain.setValueAtTime(0.2, t);
+                // Pleasant resonating "Ding"
+                const freq1 = 1200, freq2 = 1500;
+                [freq1, freq2].forEach(f => {
+                    const osc = audioCtx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, t);
+                    const g = audioCtx.createGain();
+                    g.gain.setValueAtTime(0.1, t);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+                    osc.connect(g);
+                    g.connect(audioCtx.destination);
+                    osc.start(t);
+                    osc.stop(t + 1.5);
+                });
             } else if (type === 'return') {
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, t);
-                osc.frequency.linearRampToValueAtTime(400, t + 0.4);
-                g.gain.setValueAtTime(0.1, t);
+                // Zip and Clunk
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, t);
+                osc.frequency.linearRampToValueAtTime(600, t + 0.3);
+                const g = audioCtx.createGain();
+                g.gain.setValueAtTime(0.05, t);
+                g.gain.linearRampToValueAtTime(0, t + 0.3);
+                osc.connect(g);
+                g.connect(audioCtx.destination);
+                osc.start(t);
+                osc.stop(t + 0.3);
             }
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(t + (type === 'bell' ? 0.5 : 0.1));
         }
 
         function initAudio() {
