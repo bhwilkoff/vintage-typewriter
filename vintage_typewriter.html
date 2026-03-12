@@ -335,8 +335,15 @@
                 lines[row] = "";
                 col = 0;
                 isLocked = false;
+                
+                // Mechanical timing: Carriage return takes longer than a single step
+                carriage.style.transition = "transform 0.4s ease-in-out";
                 play('return');
                 update();
+                
+                setTimeout(() => {
+                    carriage.style.transition = "transform 0.1s linear";
+                }, 400);
                 return;
             } else if (k === " ") {
                 if (col < MAX_COLS) {
@@ -443,18 +450,62 @@
                     osc.stop(t + 1.5);
                 });
             } else if (type === 'return') {
-                // Zip and Clunk
-                const osc = audioCtx.createOscillator();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, t);
-                osc.frequency.linearRampToValueAtTime(600, t + 0.3);
-                const g = audioCtx.createGain();
-                g.gain.setValueAtTime(0.05, t);
-                g.gain.linearRampToValueAtTime(0, t + 0.3);
-                osc.connect(g);
-                g.connect(audioCtx.destination);
-                osc.start(t);
-                osc.stop(t + 0.3);
+                // Authentic Mechanical Carriage Return: Slide + Ratchet + Stop
+                const dur = 0.4;
+                
+                // 1. Friction/Slide (Faint high-pass noise)
+                const friction = audioCtx.createOscillator();
+                friction.type = 'sawtooth';
+                friction.frequency.setValueAtTime(500, t);
+                friction.frequency.linearRampToValueAtTime(200, t + dur);
+                const fg = audioCtx.createGain();
+                fg.gain.setValueAtTime(0.02, t);
+                fg.gain.exponentialRampToValueAtTime(0.001, t + dur);
+                friction.connect(fg);
+                fg.connect(audioCtx.destination);
+                friction.start(t);
+                friction.stop(t + dur);
+
+                // 2. Ratchet Clicks (Series of fast pulses)
+                for (let i = 0; i < 12; i++) {
+                    const ct = t + (i / 12) * dur;
+                    const c = audioCtx.createOscillator();
+                    c.type = 'square';
+                    c.frequency.setValueAtTime(2000, ct);
+                    const cg = audioCtx.createGain();
+                    cg.gain.setValueAtTime(0.015, ct);
+                    cg.gain.exponentialRampToValueAtTime(0.001, ct + 0.01);
+                    c.connect(cg);
+                    cg.connect(audioCtx.destination);
+                    c.start(ct);
+                    c.stop(ct + 0.01);
+                }
+
+                // 3. Final Clunk (Weighted mechanical stop)
+                const stopT = t + dur - 0.05;
+                const thump = audioCtx.createOscillator();
+                thump.type = 'triangle';
+                thump.frequency.setValueAtTime(90, stopT);
+                thump.frequency.exponentialRampToValueAtTime(40, stopT + 0.15);
+                const tg = audioCtx.createGain();
+                tg.gain.setValueAtTime(0.15, stopT);
+                tg.gain.exponentialRampToValueAtTime(0.001, stopT + 0.15);
+                thump.connect(tg);
+                tg.connect(audioCtx.destination);
+                thump.start(stopT);
+                thump.stop(stopT + 0.15);
+                
+                // Metallic impact highlight
+                const click = audioCtx.createOscillator();
+                click.type = 'square';
+                click.frequency.setValueAtTime(800, stopT);
+                const clg = audioCtx.createGain();
+                clg.gain.setValueAtTime(0.05, stopT);
+                clg.gain.exponentialRampToValueAtTime(0.001, stopT + 0.02);
+                click.connect(clg);
+                clg.connect(audioCtx.destination);
+                click.start(stopT);
+                click.stop(stopT + 0.02);
             }
         }
 
