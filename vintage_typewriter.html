@@ -3,599 +3,420 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Typewriter</title>
+    <title>Vintage Typewriter</title>
     <style>
         :root {
-            --body-bg: #e0e0e0;
-            --paper-width: 850px;
-            --char-width: 10.8px; /* Approximate, will be measured in JS */
-            --line-height: 27px;
-            --platen-color: #222;
             --typewriter-green: #2E4A3D;
-            --typewriter-blue: #AEC6CF;
-            --typewriter-pink: #F88379;
-            --typewriter-sand: #EDC9AF;
-            --typewriter-gray: #8C92AC;
+            --char-width: 10.8px;
+            --line-height: 28px;
+            --paper-width: 800px;
+            --paper-padding: 80px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Courier New', Courier, monospace;
-            background: var(--body-bg);
+            background: #d0d0d0;
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            user-select: none;
         }
 
-        /* --- PAPER VIEWPORT AREA --- */
-        .viewport-container {
-            flex: 2; /* Take up more space */
-            width: 100%;
-            background: #2a2a2a;
+        /* --- Viewport --- */
+        .viewport {
+            flex: 1.2;
+            background: #222;
             position: relative;
             overflow: hidden;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
-            border-bottom: 10px solid #111;
+            box-shadow: inset 0 0 50px #000;
+            border-bottom: 8px solid #111;
         }
 
-        /* The Platen (The roller) */
         .platen {
             position: absolute;
-            top: 45%;
+            top: 50%;
             left: 0;
             width: 100%;
-            height: 80px;
+            height: 60px;
             background: linear-gradient(to bottom, #111, #333 50%, #111);
-            border-top: 2px solid #444;
-            border-bottom: 2px solid #000;
+            transform: translateY(-50%);
             z-index: 1;
         }
 
-        /* The Carriage (Holds the paper and moves horizontally) */
         #carriage {
             position: absolute;
             top: 0;
-            left: 50%; /* Origin at center of screen */
+            left: 50%; /* Anchor point for typing */
             height: 100%;
-            display: flex;
-            align-items: flex-start;
-            padding-top: 50px;
-            transition: transform 0.1s cubic-bezier(0.1, 0.5, 0.1, 1);
             z-index: 2;
+            transition: transform 0.1s cubic-bezier(0.1, 0.5, 0.1, 1);
+            pointer-events: none;
         }
 
-        /* The Paper Sheet */
         #paper {
             width: var(--paper-width);
-            min-height: 2000px;
+            min-height: 1500px;
             background: #fff;
-            background-image: linear-gradient(#eee .1em, transparent .1em);
-            background-size: 100% var(--line-height);
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            padding: 60px 80px;
-            transform: translateY(0);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            padding: 100px var(--paper-padding);
+            position: absolute;
+            top: 50%; /* Center vertically on platen */
+            margin-top: -100px; /* Adjust based on padding */
             transition: transform 0.2s ease-out;
         }
 
         #paper-text {
-            white-space: pre;
             font-size: 18px;
             line-height: var(--line-height);
             color: #222;
             font-weight: bold;
+            white-space: pre;
             word-break: break-all;
         }
 
-        /* The Strike Point / Ribbon Guide Area */
         .ribbon-guide {
             position: absolute;
-            top: 45%; /* Centered on the platen */
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 60px;
+            width: 50px;
             height: 40px;
-            border: 2px solid #999;
+            border: 2px solid #888;
             border-top: none;
-            border-radius: 0 0 10px 10px;
-            background: rgba(0,0,0,0.1);
+            border-radius: 0 0 5px 5px;
             z-index: 10;
             pointer-events: none;
         }
 
-        .ribbon-guide::before {
-            content: "";
+        .strike-mark {
             position: absolute;
-            top: -20px;
+            top: -10px;
             left: 50%;
             width: 2px;
-            height: 20px;
+            height: 15px;
             background: red;
-            opacity: 0.3;
+            opacity: 0.4;
         }
 
-        /* --- CONTROLS --- */
-        .ui-layer {
+        /* --- Controls --- */
+        .controls {
             position: absolute;
             top: 20px;
-            width: 100%;
-            padding: 0 30px;
+            left: 20px;
+            right: 20px;
             display: flex;
             justify-content: space-between;
             z-index: 20;
             pointer-events: none;
         }
 
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            pointer-events: auto;
-        }
+        .btn-col { display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
 
-        .ctrl-btn {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            border: 2px solid #666;
-            background: linear-gradient(145deg, #f0f0f0, #ccc);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            font-weight: bold;
-            transition: all 0.1s;
+        .btn {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 1px solid #666; background: #eee;
+            cursor: pointer; font-weight: bold; font-size: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
+        .btn:active { transform: translateY(2px); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .btn.active { background: #4caf50; color: white; }
 
-        .ctrl-btn:active, .ctrl-btn.active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            background: #bbb;
-        }
-
-        /* --- TYPEWRITER BODY AREA --- */
-        .typewriter-body {
-            flex: 1.5;
-            background: linear-gradient(to bottom, #2E4A3D, #1a2b23);
-            position: relative;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+        /* --- Body --- */
+        .body-area {
+            flex: 1;
+            background: var(--typewriter-green);
             box-shadow: inset 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
             z-index: 5;
         }
 
-        /* The Basket (Typebars) */
         .basket {
-            width: 100%;
-            max-width: 600px;
-            height: 120px;
-            margin: 0 auto;
-            position: relative;
-            perspective: 1000px;
+            width: 100%; height: 100px;
+            margin: 0 auto; position: relative;
+            perspective: 800px;
         }
 
         .type-bar {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 4px;
-            height: 100px;
-            background: linear-gradient(to top, #444, #999, #666);
+            position: absolute; bottom: -20px; left: 50%;
+            width: 3px; height: 120px;
+            background: linear-gradient(to top, #333, #aaa);
             transform-origin: bottom center;
-            transition: transform 0.1s cubic-bezier(0.1, 0.5, 0.1, 1);
+            transition: transform 0.12s cubic-bezier(0.1, 0.5, 0.1, 1);
             border-radius: 2px;
-            pointer-events: none;
-            z-index: 1;
         }
 
         .type-bar::after {
             content: attr(data-char);
-            position: absolute;
-            top: -15px;
-            left: 50%;
+            position: absolute; top: -12px; left: 50%;
             transform: translateX(-50%) rotate(180deg);
-            font-size: 10px;
-            color: #ccc;
-            font-weight: bold;
+            font-size: 9px; color: #eee; font-weight: bold;
         }
 
         .type-bar.striking {
             z-index: 100;
+            transform: rotateX(-85deg) rotateY(0deg) rotateZ(0deg) translateY(-180px) !important;
         }
 
-        /* Keyboard Area */
-        .keyboard {
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .key-row {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-        }
+        .keyboard { max-width: 800px; margin: 0 auto; }
+        .row { display: flex; justify-content: center; gap: 5px; margin-bottom: 6px; }
 
         .key {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #333, #111);
-            border: 2px solid #000;
-            box-shadow: 0 4px 0 #000, 0 6px 10px rgba(0,0,0,0.5);
-            color: #eee;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.05s;
+            width: 42px; height: 42px; border-radius: 50%;
+            background: #111; border: 2px solid #000;
+            color: #eee; font-size: 14px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 4px #000;
         }
+        .key:active, .key.pressed { transform: translateY(3px); box-shadow: 0 1px #000; }
+        .key-wide { width: 65px; border-radius: 20px; }
+        .space { width: 300px; border-radius: 20px; }
 
-        .key:active, .key.pressed {
-            transform: translateY(4px);
-            box-shadow: 0 0 0 #000, 0 2px 5px rgba(0,0,0,0.5);
-        }
-
-        .key-wide { width: 75px; border-radius: 20px; }
-        .space-bar { width: 350px; border-radius: 25px; }
-
-        /* Color Customization */
-        .color-selector {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .color-option {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-
-        @media (max-width: 768px) {
-            .viewport-container { flex: 1.5; }
-            .typewriter-body { flex: 2; }
-            .key { width: 38px; height: 38px; font-size: 11px; }
-            .key-wide { width: 60px; }
-            .space-bar { width: 200px; }
+        @media (max-width: 600px) {
+            .key { width: 32px; height: 32px; font-size: 11px; }
+            .space { width: 150px; }
+            .key-wide { width: 50px; }
         }
     </style>
 </head>
 <body>
-    <div class="viewport-container">
+    <div class="viewport">
         <div class="platen"></div>
         <div id="carriage">
             <div id="paper">
                 <div id="paper-text"></div>
             </div>
         </div>
-        <div class="ribbon-guide"></div>
-
-        <div class="ui-layer">
-            <div class="btn-group">
-                <button class="ctrl-btn" id="save-btn" title="Save Document">S</button>
-                <button class="ctrl-btn" id="new-btn" title="New Document">N</button>
+        <div class="ribbon-guide"><div class="strike-mark"></div></div>
+        <div class="controls">
+            <div class="btn-col">
+                <button class="btn" id="new-btn">N</button>
+                <button class="btn" id="save-btn">S</button>
             </div>
-            <div class="btn-group">
-                <button class="ctrl-btn" id="scroll-up" title="Scroll Up">▲</button>
-                <button class="ctrl-btn" id="scroll-down" title="Scroll Down">▼</button>
-                <button class="ctrl-btn active" id="sound-toggle" title="Toggle Sound">♪</button>
+            <div class="btn-col">
+                <button class="btn" id="scroll-up">▲</button>
+                <button class="btn" id="scroll-down">▼</button>
+                <button class="btn active" id="sound-toggle">♪</button>
             </div>
         </div>
     </div>
 
-    <div class="typewriter-body" id="typewriter-body">
+    <div class="body-area" id="body-panel">
         <div class="basket" id="basket"></div>
-
         <div class="keyboard">
-            <!-- Simplified keyboard structure for mapping -->
-            <div class="key-row" id="row-1"></div>
-            <div class="key-row" id="row-2"></div>
-            <div class="key-row" id="row-3"></div>
-            <div class="key-row" id="row-4"></div>
-            <div class="key-row">
-                <div class="key space-bar" data-key=" "></div>
-            </div>
-        </div>
-
-        <div class="color-selector">
-            <div class="color-option" style="background: var(--typewriter-green)" data-color="var(--typewriter-green)"></div>
-            <div class="color-option" style="background: var(--typewriter-blue)" data-color="var(--typewriter-blue)"></div>
-            <div class="color-option" style="background: var(--typewriter-pink)" data-color="var(--typewriter-pink)"></div>
-            <div class="color-option" style="background: var(--typewriter-sand)" data-color="var(--typewriter-sand)"></div>
-            <div class="color-option" style="background: var(--typewriter-gray)" data-color="var(--typewriter-gray)"></div>
+            <div class="row" id="r1"></div>
+            <div class="row" id="r2"></div>
+            <div class="row" id="r3"></div>
+            <div class="row" id="r4"></div>
+            <div class="row"><div class="key space" data-key=" "></div></div>
         </div>
     </div>
 
     <script>
-        // Constants
-        const MAX_COLS = 72;
-        const LINE_PADDING = 80; // Left padding in paper pixels
-        const BELL_MARGIN = 5;   // Ding 5 chars before end
-
-        // State
+        const MAX_COLS = 70;
+        const BELL_AT = 65;
+        
         let lines = [""];
-        let currentCol = 0;
-        let currentRow = 0;
-        let isShifted = false;
-        let isMuted = false;
-        let charWidth = 10.8;
-        let isLocked = false;
-
-        // Audio Context
+        let col = 0, row = 0;
+        let isShift = false, isMuted = false, isLocked = false;
+        let charW = 10.8;
         let audioCtx = null;
 
-        // Elements
         const carriage = document.getElementById('carriage');
         const paper = document.getElementById('paper');
         const paperText = document.getElementById('paper-text');
         const basket = document.getElementById('basket');
-        const body = document.getElementById('typewriter-body');
 
-        // Layout Mapping
-        const keyboardRows = [
-            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=", "Backspace"],
-            ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\\"],
-            ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'", "Enter"],
-            ["Shift", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "Shift"]
+        const keys = [
+            ["1234567890-=", "Backspace"],
+            ["qwertyuiop[]\\"],
+            ["asdfghjkl;'", "Enter"],
+            ["Shift", "zxcvbnm,./", "Shift"]
         ];
 
-        const charList = "1234567890-qwertyuiopasdfghjkl;zxcvbnm,./".split("");
-
         function init() {
-            createTypeBars();
-            createKeys();
-            measureCharWidth();
-            setupEventListeners();
-            updateDisplay();
+            measure();
+            renderKeyboard();
+            renderBasket();
+            attach();
+            update();
         }
 
-        function createTypeBars() {
-            basket.innerHTML = '';
-            charList.forEach((char, i) => {
+        function measure() {
+            const s = document.createElement('span');
+            s.style.font = "bold 18px 'Courier New'";
+            s.textContent = "M";
+            document.body.appendChild(s);
+            charW = s.getBoundingClientRect().width;
+            document.body.removeChild(s);
+        }
+
+        function renderKeyboard() {
+            keys.forEach((r, i) => {
+                const container = document.getElementById(`r${i+1}`);
+                r.forEach(group => {
+                    if (group.length > 1 && group !== "Backspace" && group !== "Enter" && group !== "Shift") {
+                        group.split("").forEach(k => addKey(k, container));
+                    } else {
+                        addKey(group, container);
+                    }
+                });
+            });
+        }
+
+        function addKey(label, parent) {
+            const div = document.createElement('div');
+            div.className = 'key';
+            if (label.length > 1) div.classList.add('key-wide');
+            div.textContent = label === "Backspace" ? "←" : label === "Enter" ? "Ret" : label;
+            div.dataset.key = label;
+            parent.appendChild(div);
+        }
+
+        function renderBasket() {
+            const chars = "1234567890qwertyuiopasdfghjklzxcvbnm".split("");
+            chars.forEach((c, i) => {
                 const bar = document.createElement('div');
                 bar.className = 'type-bar';
-                bar.id = `bar-${char}`;
-                bar.setAttribute('data-char', char.toUpperCase());
-                
-                // Fan out arc: -75 to 75 degrees
-                const angle = -75 + (i / (charList.length - 1)) * 150;
+                bar.id = `bar-${c}`;
+                bar.dataset.char = c.toUpperCase();
+                const angle = -70 + (i / (chars.length-1)) * 140;
                 bar.style.transform = `rotate(${angle}deg)`;
                 basket.appendChild(bar);
             });
         }
 
-        function createKeys() {
-            keyboardRows.forEach((row, rowIndex) => {
-                const container = document.getElementById(`row-${rowIndex + 1}`);
-                row.forEach(key => {
-                    const keyEl = document.createElement('div');
-                    keyEl.className = 'key';
-                    if (key === "Backspace" || key === "Shift" || key === "Enter") {
-                        keyEl.classList.add('key-wide');
-                    }
-                    keyEl.textContent = key === "Backspace" ? "←" : key === "Enter" ? "Ret" : key;
-                    keyEl.setAttribute('data-key', key);
-                    container.appendChild(keyEl);
-                });
-            });
-        }
-
-        function measureCharWidth() {
-            const span = document.createElement('span');
-            span.style.font = "bold 18px 'Courier New'";
-            span.textContent = "M";
-            document.body.appendChild(span);
-            charWidth = span.getBoundingClientRect().width;
-            document.body.removeChild(span);
-            document.documentElement.style.setProperty('--char-width', `${charWidth}px`);
-        }
-
-        function typeChar(char) {
-            if (isLocked) return;
-
+        function type(k) {
+            if (isLocked && k !== "Enter" && k !== "Backspace") return;
             initAudio();
 
-            if (char === "Backspace") {
-                if (currentCol > 0) {
-                    lines[currentRow] = lines[currentRow].slice(0, -1);
-                    currentCol--;
-                    playSound('type', 0.8);
+            if (k === "Backspace") {
+                if (col > 0) {
+                    lines[row] = lines[row].slice(0, -1);
+                    col--;
+                    isLocked = false;
+                    play('type', 0.7);
                 }
-                updateDisplay();
-                return;
-            }
-
-            if (char === "Enter") {
-                currentRow++;
-                lines[currentRow] = "";
-                currentCol = 0;
+            } else if (k === "Enter") {
+                row++;
+                lines[row] = "";
+                col = 0;
                 isLocked = false;
-                playSound('return');
-                animateStrike("Enter");
-                updateDisplay();
+                play('return');
+                update();
                 return;
+            } else if (k === " ") {
+                if (col < MAX_COLS) {
+                    lines[row] += " ";
+                    col++;
+                    play('type', 0.5);
+                }
+            } else if (k.length === 1) {
+                if (col >= MAX_COLS) { isLocked = true; return; }
+                const c = isShift ? k.toUpperCase() : k.toLowerCase();
+                lines[row] += c;
+                col++;
+                strike(k.toLowerCase());
+                play('type');
+                if (col === BELL_AT) play('bell');
             }
-
-            if (currentCol >= MAX_COLS) {
-                isLocked = true;
-                return;
-            }
-
-            let actualChar = char;
-            if (char === " ") {
-                actualChar = " ";
-            } else if (char.length === 1) {
-                actualChar = isShifted ? char.toUpperCase() : char.toLowerCase();
-            }
-
-            lines[currentRow] += actualChar;
-            currentCol++;
-            
-            if (char !== " ") {
-                animateStrike(char.toLowerCase());
-                playSound('type');
-            } else {
-                playSound('type', 0.5);
-            }
-
-            if (currentCol === MAX_COLS - BELL_MARGIN) {
-                playSound('bell');
-            }
-
-            updateDisplay();
+            update();
         }
 
-        function updateDisplay() {
-            paperText.textContent = lines.join("\n");
-            
-            // Move Carriage
-            // Target: Center of screen (left: 50%) should align with currentCol
-            // Paper has padding-left: 80px.
-            // When currentCol = 0, we want paper's x=80 to be at screen center.
-            const horizontalOffset = 80 + (currentCol * charWidth);
-            carriage.style.transform = `translateX(${-horizontalOffset}px)`;
-
-            // Move Paper vertically
-            const verticalOffset = currentRow * 27;
-            paper.style.transform = `translateY(${-verticalOffset}px)`;
-        }
-
-        function animateStrike(char) {
-            const bar = document.getElementById(`bar-${char}`);
-            if (!bar) return;
-
-            const originalTransform = bar.style.transform;
-            bar.classList.add('striking');
-            
-            // Dynamic strike animation:
-            // Move to vertical (0deg) and move UP significantly to hit paper
-            // Platen is at ~45% height. Basket is in body. 
-            // -280px is a rough estimate to reach the platen area from the basket
-            bar.style.transform = `translateY(-300px) rotateX(-60deg) rotate(0deg) scaleY(1.5)`;
-            
-            // Update the char on the head to match case
-            bar.setAttribute('data-char', isShifted ? char.toUpperCase() : char.toLowerCase());
-
+        function strike(c) {
+            const b = document.getElementById(`bar-${c}`);
+            if (!b) return;
+            const old = b.style.transform;
+            b.dataset.char = isShift ? c.toUpperCase() : c.toLowerCase();
+            b.classList.add('striking');
             setTimeout(() => {
-                bar.style.transform = originalTransform;
-                bar.classList.remove('striking');
-            }, 120);
+                b.classList.remove('striking');
+                b.style.transform = old;
+            }, 150);
+        }
+
+        function update() {
+            paperText.textContent = lines.join("\n");
+            // CARRIAGE: Base is 50% left. Paper padding is 80px.
+            // When col=0, we want paper x=80 at screen center.
+            // So translate = -80px.
+            const tx = -80 - (col * charW);
+            carriage.style.transform = `translateX(${tx}px)`;
+            
+            // PAPER Y: Move up by line height
+            const ty = -(row * 28);
+            paper.style.transform = `translateY(${ty}px)`;
+        }
+
+        function play(type, vol = 1) {
+            if (isMuted || !audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            if (type === 'type') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(150, t);
+                osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+                g.gain.setValueAtTime(0.1 * vol, t);
+            } else if (type === 'bell') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, t);
+                g.gain.setValueAtTime(0.2, t);
+            } else if (type === 'return') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, t);
+                osc.frequency.linearRampToValueAtTime(300, t + 0.4);
+                g.gain.setValueAtTime(0.1, t);
+            }
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(); osc.stop(t + (type === 'bell' ? 0.5 : 0.1));
         }
 
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        function playSound(type, volume = 1) {
-            if (isMuted || !audioCtx) return;
-
-            const t = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-
-            if (type === 'type') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(150, t);
-                osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-                gain.gain.setValueAtTime(0.1 * volume, t);
-                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-            } else if (type === 'bell') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(1200, t);
-                gain.gain.setValueAtTime(0.2, t);
-                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
-            } else if (type === 'return') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, t);
-                osc.frequency.linearRampToValueAtTime(200, t + 0.3);
-                gain.gain.setValueAtTime(0.05, t);
-                gain.gain.linearRampToValueAtTime(0, t + 0.3);
-            }
-
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(t + 0.5);
-        }
-
-        function setupEventListeners() {
-            // Keyboard
-            document.addEventListener('keydown', (e) => {
-                if (e.key === "Shift") {
-                    isShifted = true;
-                    document.querySelectorAll('.key[data-key="Shift"]').forEach(el => el.classList.add('active'));
-                    return;
-                }
-
+        function attach() {
+            document.addEventListener('keydown', e => {
+                if (e.key === "Shift") { isShift = true; return; }
                 if (e.ctrlKey || e.metaKey) return;
-
-                const key = e.key === "Enter" ? "Enter" : e.key === "Backspace" ? "Backspace" : e.key.toLowerCase();
-                const keyEl = document.querySelector(`.key[data-key="${key}"]`);
-                if (keyEl) {
-                    keyEl.classList.add('pressed');
-                    setTimeout(() => keyEl.classList.remove('pressed'), 100);
+                const k = e.key;
+                const visual = document.querySelector(`.key[data-key="${k.toLowerCase()}"]`) || 
+                               document.querySelector(`.key[data-key="${k}"]`);
+                if (visual) {
+                    visual.classList.add('pressed');
+                    setTimeout(() => visual.classList.remove('pressed'), 100);
                 }
-
-                if (key.length === 1 || key === "Enter" || key === "Backspace") {
+                if (k.length === 1 || k === "Enter" || k === "Backspace") {
                     e.preventDefault();
-                    typeChar(e.key === "Enter" ? "Enter" : e.key === "Backspace" ? "Backspace" : e.key);
+                    type(k);
                 }
             });
+            document.addEventListener('keyup', e => { if (e.key === "Shift") isShift = false; });
 
-            document.addEventListener('keyup', (e) => {
-                if (e.key === "Shift") {
-                    isShifted = false;
-                    document.querySelectorAll('.key[data-key="Shift"]').forEach(el => el.classList.remove('active'));
-                }
-            });
-
-            // Virtual Clicks
             document.querySelectorAll('.key').forEach(el => {
                 el.addEventListener('click', () => {
-                    const key = el.getAttribute('data-key');
-                    if (key === "Shift") {
-                        isShifted = !isShifted;
-                        el.classList.toggle('active');
-                        return;
-                    }
-                    typeChar(key === "Enter" ? "Enter" : key === "Backspace" ? "Backspace" : key);
+                    const k = el.dataset.key;
+                    if (k === "Shift") { isShift = !isShift; el.classList.toggle('active'); return; }
+                    type(k);
                 });
             });
 
-            // UI Buttons
-            document.getElementById('scroll-up').addEventListener('click', () => { currentRow = Math.max(0, currentRow - 1); updateDisplay(); });
-            document.getElementById('scroll-down').addEventListener('click', () => { currentRow++; if(!lines[currentRow]) lines[currentRow]=""; updateDisplay(); });
-            document.getElementById('sound-toggle').addEventListener('click', (e) => { isMuted = !isMuted; e.target.classList.toggle('active'); });
-            
-            // Color Selector
-            document.querySelectorAll('.color-option').forEach(opt => {
-                opt.addEventListener('click', () => {
-                    body.style.background = `linear-gradient(to bottom, ${opt.dataset.color}, #111)`;
-                });
+            document.getElementById('save-btn').addEventListener('click', () => {
+                const blob = new Blob([lines.join("\n")], {type: 'text/plain'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = "typewriter.txt";
+                a.click(); URL.revokeObjectURL(url);
             });
+
+            document.getElementById('new-btn').addEventListener('click', () => {
+                if (confirm("Start new document?")) { lines = [""]; row = 0; col = 0; isLocked = false; update(); }
+            });
+
+            document.getElementById('scroll-up').addEventListener('click', () => { row = Math.max(0, row-1); update(); });
+            document.getElementById('scroll-down').addEventListener('click', () => { row++; if(!lines[row]) lines[row]=""; update(); });
+            document.getElementById('sound-toggle').addEventListener('click', e => { isMuted = !isMuted; e.target.classList.toggle('active'); });
         }
 
         init();
