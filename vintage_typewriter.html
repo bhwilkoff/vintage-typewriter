@@ -332,7 +332,7 @@
         const BELL_AT = 65;
         const CHAR_W = 10.8;
         
-        let lines = [""];
+        let lines = [[]]; // Each line is an array of {c: char, color: color}
         let col = 0, row = 0;
         let isShift = false, isShiftLock = false, isMuted = false, isLocked = false;
         let audioCtx = null;
@@ -396,9 +396,11 @@
             if (isLocked && k !== "Enter" && k !== "Backspace") return;
             initAudio();
 
+            const inkColor = getComputedStyle(document.documentElement).getPropertyValue('--ink-color').trim() || "#222";
+
             if (k === "Backspace") {
                 if (col > 0) {
-                    lines[row] = lines[row].slice(0, -1);
+                    lines[row].pop();
                     col--;
                     isLocked = false;
                     play('type', 0.7);
@@ -406,7 +408,7 @@
                 }
             } else if (k === "Enter") {
                 row++;
-                lines[row] = "";
+                lines[row] = [];
                 col = 0;
                 isLocked = false;
                 carriage.style.transition = "transform 0.4s ease-in-out";
@@ -418,7 +420,7 @@
                 return;
             } else if (k === " ") {
                 if (col < MAX_COLS) {
-                    lines[row] += " ";
+                    lines[row].push({c: " ", color: "transparent"});
                     col++;
                     play('type', 0.4);
                     if (col === BELL_AT) play('bell');
@@ -427,7 +429,7 @@
             } else if (k.length === 1) {
                 if (col >= MAX_COLS) { isLocked = true; return; }
                 const c = (isShift || isShiftLock) ? k.toUpperCase() : k.toLowerCase();
-                lines[row] += c;
+                lines[row].push({c: c, color: inkColor});
                 col++;
                 strike(k.toLowerCase());
                 play('type');
@@ -451,7 +453,11 @@
         }
 
         function update() {
-            paperText.textContent = lines.join("\n");
+            // Render lines as colored spans
+            paperText.innerHTML = lines.map(line => {
+                return line.map(item => `<span style="color: ${item.color}">${item.c}</span>`).join("");
+            }).join("\n");
+
             const tx = -200 - (col * CHAR_W);
             carriage.style.transform = `translateX(${tx}px)`;
             const ty = -(row * 28);
@@ -579,18 +585,20 @@
             });
 
             document.getElementById('save-btn').addEventListener('click', () => {
-                const blob = new Blob([lines.join("\n")], {type: 'text/plain'});
+                // Extract plain text for saving
+                const plainText = lines.map(line => line.map(item => item.c).join("")).join("\n");
+                const blob = new Blob([plainText], {type: 'text/plain'});
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = "typewriter.txt";
                 a.click(); URL.revokeObjectURL(url);
             });
 
             document.getElementById('new-btn').addEventListener('click', () => {
-                if (confirm("Start new document?")) { lines = [""]; row = 0; col = 0; isLocked = false; update(); }
+                if (confirm("Start new document?")) { lines = [[]]; row = 0; col = 0; isLocked = false; update(); }
             });
 
             document.getElementById('scroll-up').addEventListener('click', () => { row = Math.max(0, row-1); update(); });
-            document.getElementById('scroll-down').addEventListener('click', () => { row++; if(!lines[row]) lines[row]=""; update(); });
+            document.getElementById('scroll-down').addEventListener('click', () => { row++; if(!lines[row]) lines[row]=[]; update(); });
             document.getElementById('sound-toggle').addEventListener('click', e => { isMuted = !isMuted; e.target.classList.toggle('active'); });
 
             document.querySelectorAll('.color-dot').forEach(dot => {
